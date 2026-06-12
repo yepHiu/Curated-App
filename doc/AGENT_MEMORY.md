@@ -45,6 +45,7 @@
 - Android 首页和 My media 共用 `CuratedMoviesScreen` / `CuratedMoviesViewModel`，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
 - 当前源码中的 `curatedStartPositionMs()` 只使用 `startPositionSec`，缺失时从 0 起播；`resumePositionSec` 当前被忽略。
 - Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
+- Curated 首页 / My media 顶部栏只保留设置入口，不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
 - Android UI 视觉方向是默认深色、内容优先、低干扰媒体库界面、粉色品牌主色。
 - Android Compose 页面顶部栏、返回按钮、标题、筛选栏和首屏主要内容必须主动处理 `WindowInsets.safeDrawing` 或项目 `rememberSafePadding()`，避免与通知栏、挖孔屏或显示裁切区域重叠；不要只写固定顶部间距。
@@ -126,3 +127,4 @@ Agent 必须主动维护以下文档：
 - 修复 Android 首页和 My media 电影列表只显示首个 50 条结果的问题：列表状态记录总数和下一页加载状态，滚动接近底部时继续用 `limit/offset` 拉取并追加后续影片。
 - 修复影片详情页顶部栏与通知栏重叠的问题：详情页 header 改用 `rememberSafePadding()` 计算顶部安全区，并把“Android 页面必须处理系统栏安全区”写入 agent 规则和 UI 样式规范。
 - 修复底部导航选中态标签文字发灰导致可视度下降的问题：`NavigationSuiteScaffold` 的每个 item 显式传入导航颜色，选中图标和文字使用 `onSurface`，未选中态保留 `onSurfaceVariant`。
+- 精简 Curated 首页 / My media 顶部栏：删除顶部服务器入口，保留设置入口；服务器管理继续通过设置页进入。

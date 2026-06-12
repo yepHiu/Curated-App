@@ -49,7 +49,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun CuratedMoviesScreen(
     onMovieClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
-    onManageServersClick: () -> Unit,
     viewModel: CuratedMoviesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -60,7 +59,6 @@ fun CuratedMoviesScreen(
         onRetryClick = viewModel::loadMovies,
         onLoadMore = viewModel::loadNextPage,
         onSettingsClick = onSettingsClick,
-        onManageServersClick = onManageServersClick,
     )
 }
 
@@ -71,7 +69,6 @@ private fun CuratedMoviesLayout(
     onRetryClick: () -> Unit,
     onLoadMore: () -> Unit,
     onSettingsClick: () -> Unit,
-    onManageServersClick: () -> Unit,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
@@ -119,16 +116,10 @@ private fun CuratedMoviesLayout(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onManageServersClick) {
-                Icon(
-                    painter = painterResource(CoreR.drawable.ic_server),
-                    contentDescription = "Servers",
-                )
-            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     painter = painterResource(CoreR.drawable.ic_settings),
-                    contentDescription = "Settings",
+                    contentDescription = curatedMoviesHeaderActionContentDescriptions().single(),
                 )
             }
         }
@@ -234,6 +225,8 @@ internal fun curatedMovieCardImageUrl(movie: MovieListItem): String? =
 internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
 
 internal fun curatedMoviesHeaderSubtitle(total: Int): String = "Movie library"
+
+internal fun curatedMoviesHeaderActionContentDescriptions(): List<String> = listOf("Settings")
 
 internal fun curatedMoviesShouldRequestNextPage(
     lastVisibleItemIndex: Int,

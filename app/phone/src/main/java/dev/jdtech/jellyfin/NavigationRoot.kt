@@ -324,7 +324,6 @@ fun NavigationRoot(
                             SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings))
                         )
                     },
-                    onManageServersClick = { navController.safeNavigate(ServersRoute) },
                 )
             }
             composable<MediaRoute> {
@@ -335,7 +334,6 @@ fun NavigationRoot(
                             SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings))
                         )
                     },
-                    onManageServersClick = { navController.safeNavigate(ServersRoute) },
                 )
             }
             composable<HistoryRoute> {

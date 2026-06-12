@@ -19,4 +19,9 @@ class CuratedMoviesLayoutInsetsTest {
     fun headerSubtitleDoesNotShowMovieCount() {
         assertEquals("Movie library", curatedMoviesHeaderSubtitle(total = 125))
     }
+
+    @Test
+    fun headerActionsOnlyKeepSettingsEntry() {
+        assertEquals(listOf("Settings"), curatedMoviesHeaderActionContentDescriptions())
+    }
 }
