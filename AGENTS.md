@@ -82,6 +82,7 @@ Android UI 必须遵守 `doc/2026-06-08-curated-android-ui-color-style-guide.md`
 - 深色和浅色都要显式实现，不允许只实现深色后依赖系统反色推导浅色。
 - 状态色不能只靠颜色表达含义，必须配合文字、图标或状态标签。
 - 普通业务 UI 不应引入新的主色系；媒体封面和视频画面可使用局部黑色遮罩。
+- 所有 Android Compose 页面顶部栏、返回按钮、标题、筛选栏和首屏主要内容都必须主动处理 `WindowInsets.safeDrawing` 或项目 `rememberSafePadding()`，避免与通知栏、挖孔屏或显示裁切区域重叠；不要只写固定 `top = 8.dp` / `16.dp`。
 
 ## Agent 记忆维护规则
 

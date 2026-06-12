@@ -350,6 +350,17 @@ Web 当前基础圆角为 `0.625rem`，Android 建议映射：
 - 浅色主题可使用低透明度阴影，但不要使用浓重浮层阴影。
 - BottomSheet/Dialog 使用 `SurfaceElevated` + scrim，而不是靠大阴影强行分层。
 
+## 6.1 系统栏安全区
+
+Android 页面不能假设状态栏、通知栏、挖孔屏或显示裁切区域不存在。所有顶部栏、返回按钮、标题、筛选栏和首屏主要内容都必须主动处理 `WindowInsets.safeDrawing`，项目内优先使用 `rememberSafePadding()`。
+
+推荐做法：
+
+- 普通 Compose 顶部栏：`top = safePadding.top + 8.dp`，保留原本视觉间距，同时避开通知栏。
+- 底部导航之外的底部操作区：加上 `safePadding.bottom`，避免被手势导航条遮挡。
+- 左右内容在横屏、平板和折叠屏上按需使用 `safePadding.start` / `safePadding.end`。
+- 不要只写固定 `top = 8.dp`、`16.dp` 或依赖设备状态栏透明行为。
+
 ## 7. 字体和排版
 
 Web 使用 Outfit 作为 Curated 品牌字标字体。Android 可选策略：

@@ -29,12 +29,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.core.R as CoreR
 import dev.jdtech.jellyfin.curated.api.MovieDetail
+import dev.jdtech.jellyfin.presentation.utils.rememberSafePadding
 
 @Composable
 fun CuratedMovieDetailScreen(
@@ -63,10 +65,19 @@ private fun CuratedMovieDetailLayout(
     navigateHome: () -> Unit,
     onPlayMovie: (movieId: String, title: String) -> Unit,
 ) {
+    val safePadding = rememberSafePadding(handleStartInsets = false)
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(
+                        start = 8.dp,
+                        top = curatedMovieDetailHeaderTopPadding(safePadding.top),
+                        end = 8.dp,
+                        bottom = 8.dp,
+                    ),
         ) {
             IconButton(onClick = navigateBack) {
                 Icon(
@@ -196,6 +207,9 @@ private fun CuratedMovieDetailContent(
 
 internal fun curatedMovieDetailHeroImageUrl(movie: MovieDetail): String? =
     movie.coverUrl ?: movie.thumbUrl
+
+internal fun curatedMovieDetailHeaderTopPadding(safeDrawingTop: Dp): Dp =
+    safeDrawingTop + 8.dp
 
 @Composable
 private fun CuratedDetailLine(label: String, value: String) {
