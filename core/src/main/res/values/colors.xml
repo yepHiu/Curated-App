@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary -->
+    <color name="primary_light">#FE628E</color>
+    <color name="primary_container_light">#5A1B32</color>
+    <color name="on_primary_container_light">#FFD9E3</color>
+
+    <color name="primary_dark">#FE628E</color>
+    <color name="on_primary_dark">#1D0910</color>
+    <color name="primary_container_dark">#5A1B32</color>
+    <color name="on_primary_container_dark">#FFD9E3</color>
+
+    <!-- Secondary -->
+    <color name="secondary_light">#1B2234</color>
+    <color name="secondary_container_light">#252D43</color>
+    <color name="on_secondary_container_light">#E6E9F6</color>
+
+    <color name="secondary_dark">#1B2234</color>
+    <color name="on_secondary_dark">#F8F7FB</color>
+    <color name="secondary_container_dark">#252D43</color>
+    <color name="on_secondary_container_dark">#E6E9F6</color>
+
+
+    <color name="blue_300">#8B9CFF</color>
+    <color name="blue_600">#8B9CFF</color>
+    <color name="blue_800">#5466D8</color>
+    <color name="green_300">#71ca92</color>
+    <color name="green_500">#24B364</color>
+    <color name="green_800">#038043</color>
+    <color name="neutral_1000">#0D0F1A</color>
+    <color name="neutral_900">#141826</color>
+    <color name="neutral_800">#1B2234</color>
+    <color name="neutral_700">#252D43</color>
+    <color name="neutral_400">#626B82</color>
+    <color name="neutral_300">#A2ABC2</color>
+    <color name="neutral_200">#DCE1EF</color>
+    <color name="neutral_100">#141826</color>
+    <color name="neutral_50">#0D0F1A</color>
+    <color name="transparent_white_300">#4DFFFFFF</color>
+    <color name="transparent_black_300">#4D000000</color>
+    <color name="red">#FF6F87</color>
+    <color name="yellow">#F2C94C</color>
+    <color name="player_background">#AA000000</color>
+
+    <color name="logo_primary">#FE628E</color>
+    <color name="logo_secondary">#8B9CFF</color>
+</resources>

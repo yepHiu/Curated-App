@@ -1,0 +1,92 @@
+package dev.jdtech.jellyfin.curated.api
+
+fun MovieListItemDto.toDomain(baseUrl: String): MovieListItem =
+    MovieListItem(
+        id = id,
+        title = title,
+        code = code,
+        studio = studio,
+        actors = actors,
+        tags = tags,
+        userTags = userTags,
+        runtimeMinutes = runtimeMinutes,
+        rating = rating,
+        isFavorite = isFavorite,
+        addedAt = addedAt,
+        location = location,
+        resolution = resolution,
+        year = year,
+        releaseDate = releaseDate,
+        coverUrl = CuratedUrlResolver.absoluteUrl(baseUrl, coverUrl),
+        thumbUrl = CuratedUrlResolver.absoluteUrl(baseUrl, thumbUrl),
+        trashedAt = trashedAt,
+    )
+
+fun MoviesPageDto.toDomain(baseUrl: String): MoviesPage =
+    MoviesPage(
+        items = items.map { it.toDomain(baseUrl) },
+        total = total,
+        limit = limit,
+        offset = offset,
+    )
+
+fun MovieDetailDto.toDomain(baseUrl: String): MovieDetail =
+    MovieDetail(
+        id = id,
+        title = title,
+        code = code,
+        studio = studio,
+        actors = actors,
+        tags = tags,
+        userTags = userTags,
+        runtimeMinutes = runtimeMinutes,
+        rating = rating,
+        isFavorite = isFavorite,
+        addedAt = addedAt,
+        location = location,
+        resolution = resolution,
+        year = year,
+        releaseDate = releaseDate,
+        coverUrl = CuratedUrlResolver.absoluteUrl(baseUrl, coverUrl),
+        thumbUrl = CuratedUrlResolver.absoluteUrl(baseUrl, thumbUrl),
+        trashedAt = trashedAt,
+        summary = summary,
+        previewImages = previewImages.mapNotNull { CuratedUrlResolver.absoluteUrl(baseUrl, it) },
+        previewVideoUrl = CuratedUrlResolver.absoluteUrl(baseUrl, previewVideoUrl),
+        metadataRating = metadataRating,
+        userRating = userRating,
+        actorAvatarUrls =
+            actorAvatarUrls.mapValues { (_, url) ->
+                CuratedUrlResolver.absoluteUrl(baseUrl, url).orEmpty()
+            },
+    )
+
+fun PlaybackDescriptorDto.toDomain(baseUrl: String): PlaybackDescriptor =
+    PlaybackDescriptor(
+        movieId = movieId,
+        mode = mode.toPlaybackMode(),
+        sessionId = sessionId,
+        sessionKind = sessionKind,
+        url = CuratedUrlResolver.absoluteUrl(baseUrl, url).orEmpty(),
+        mimeType = mimeType,
+        fileName = fileName,
+        transcodeProfile = transcodeProfile,
+        durationSec = durationSec,
+        startPositionSec = startPositionSec,
+        resumePositionSec = resumePositionSec,
+        canDirectPlay = canDirectPlay,
+        reason = reason,
+        reasonCode = reasonCode,
+        reasonMessage = reasonMessage,
+        sourceContainer = sourceContainer,
+        sourceVideoCodec = sourceVideoCodec,
+        sourceAudioCodec = sourceAudioCodec,
+    )
+
+private fun String.toPlaybackMode(): PlaybackMode =
+    when (lowercase()) {
+        "direct" -> PlaybackMode.Direct
+        "hls" -> PlaybackMode.Hls
+        "native" -> PlaybackMode.Native
+        else -> PlaybackMode.Direct
+    }
