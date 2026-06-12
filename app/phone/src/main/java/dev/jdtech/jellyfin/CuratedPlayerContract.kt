@@ -14,6 +14,9 @@ internal fun curatedPlayerExtras(movieId: String, title: String?): Map<String, S
         CuratedPlayerContract.EXTRA_TITLE to title,
     )
 
+internal fun curatedHistoryPlayerExtras(movieId: String, title: String): Map<String, String?> =
+    curatedPlayerExtras(movieId = movieId, title = title)
+
 internal fun PlaybackDescriptor.curatedStartPositionMs(): Long {
     val startSeconds = startPositionSec ?: 0.0
     return (startSeconds * 1000.0).roundToLong().coerceAtLeast(0L)

@@ -41,8 +41,8 @@ class NavigationRootTest {
         val onlineRoutes = curatedNavigationItems(isOfflineMode = false).map { it.route::class }
         val offlineRoutes = curatedNavigationItems(isOfflineMode = true).map { it.route::class }
 
-        assertEquals(listOf(HomeRoute::class, MediaRoute::class), onlineRoutes)
-        assertEquals(listOf(HomeRoute::class, MediaRoute::class), offlineRoutes)
+        assertEquals(listOf(HomeRoute::class, MediaRoute::class, HistoryRoute::class), onlineRoutes)
+        assertEquals(listOf(HomeRoute::class, MediaRoute::class, HistoryRoute::class), offlineRoutes)
         assertFalse(onlineRoutes.contains(DownloadsRoute::class))
         assertFalse(offlineRoutes.contains(DownloadsRoute::class))
     }

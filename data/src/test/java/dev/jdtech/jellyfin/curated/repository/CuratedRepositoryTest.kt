@@ -154,4 +154,37 @@ class CuratedRepositoryTest {
         assertEquals("$origin/api/playback/sessions/session-1/hls/master.m3u8", descriptor.url)
         assertEquals(42.5, descriptor.resumePositionSec!!, 0.0)
     }
+
+    @Test
+    fun getPlaybackProgressReturnsDomainProgressItems() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "items": [
+                        {
+                          "movieId": "movie-1",
+                          "positionSec": 120.5,
+                          "durationSec": 7200,
+                          "updatedAt": "2026-06-07T12:00:00Z"
+                        }
+                      ]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val progress = repository.getPlaybackProgress()
+        val request = server.takeRequest()
+
+        assertEquals("/api/playback/progress", request.requestUrl?.encodedPath)
+        assertEquals(1, progress.size)
+        assertEquals("movie-1", progress.first().movieId)
+        assertEquals(120.5, progress.first().positionSec, 0.0)
+        assertEquals(7200.0, progress.first().durationSec ?: -1.0, 0.0)
+        assertEquals("2026-06-07T12:00:00Z", progress.first().updatedAt)
+    }
 }

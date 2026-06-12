@@ -284,4 +284,43 @@ class CuratedApiClientTest {
         assertEquals("session-1", descriptor.sessionId)
         assertEquals(42.5, descriptor.resumePositionSec!!, 0.0)
     }
+
+    @Test
+    fun getPlaybackProgressRequestsProgressEndpointAndParsesItems() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "items": [
+                        {
+                          "movieId": "movie-1",
+                          "positionSec": 120.5,
+                          "durationSec": 7200,
+                          "updatedAt": "2026-06-07T12:00:00Z"
+                        },
+                        {
+                          "movieId": "movie-2",
+                          "positionSec": 42.0,
+                          "updatedAt": "2026-06-08T08:30:00Z"
+                        }
+                      ]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val progress = api.getPlaybackProgress()
+        val request = server.takeRequest()
+
+        assertEquals("/api/playback/progress", request.path)
+        assertEquals(2, progress.items.size)
+        assertEquals("movie-1", progress.items.first().movieId)
+        assertEquals(120.5, progress.items.first().positionSec, 0.0)
+        assertEquals(7200.0, progress.items.first().durationSec ?: -1.0, 0.0)
+        assertEquals("2026-06-07T12:00:00Z", progress.items.first().updatedAt)
+        assertEquals(null, progress.items.last().durationSec)
+    }
 }

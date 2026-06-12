@@ -5,6 +5,7 @@ import dev.jdtech.jellyfin.curated.api.CuratedUrlResolver
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
+import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 import dev.jdtech.jellyfin.curated.api.toDomain
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -46,4 +47,7 @@ class CuratedRepositoryImpl(
 
     override suspend fun getPlaybackDescriptor(movieId: String): PlaybackDescriptor =
         withContext(dispatcher) { api.getPlaybackDescriptor(movieId).toDomain(normalizedBaseUrl) }
+
+    override suspend fun getPlaybackProgress(): List<PlaybackProgress> =
+        withContext(dispatcher) { api.getPlaybackProgress().items.map { it.toDomain() } }
 }

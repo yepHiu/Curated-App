@@ -105,4 +105,22 @@ class CuratedDtoMapperTest {
         assertEquals("http://192.168.1.23:8080/api/playback/sessions/session-1/hls/index.m3u8", descriptor.url)
         assertEquals(120.5, descriptor.resumePositionSec ?: -1.0, 0.0)
     }
+
+    @Test
+    fun mapsPlaybackProgressDtoToDomain() {
+        val dto =
+            PlaybackProgressDto(
+                movieId = "movie-1",
+                positionSec = 120.5,
+                durationSec = 7200.0,
+                updatedAt = "2026-06-07T12:00:00Z",
+            )
+
+        val progress = dto.toDomain()
+
+        assertEquals("movie-1", progress.movieId)
+        assertEquals(120.5, progress.positionSec, 0.0)
+        assertEquals(7200.0, progress.durationSec ?: -1.0, 0.0)
+        assertEquals("2026-06-07T12:00:00Z", progress.updatedAt)
+    }
 }

@@ -3,6 +3,7 @@ package dev.jdtech.jellyfin.curated.repository
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
+import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 
 interface CuratedRepository {
     suspend fun getMovies(
@@ -17,4 +18,6 @@ interface CuratedRepository {
     suspend fun getMovie(movieId: String): MovieDetail
 
     suspend fun getPlaybackDescriptor(movieId: String): PlaybackDescriptor
+
+    suspend fun getPlaybackProgress(): List<PlaybackProgress>
 }

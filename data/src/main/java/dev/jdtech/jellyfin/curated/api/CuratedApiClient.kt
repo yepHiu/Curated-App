@@ -55,6 +55,8 @@ class CuratedApiClient(
         return get(url)
     }
 
+    fun getPlaybackProgress(): PlaybackProgressListDto = get(path = "/playback/progress")
+
     private inline fun <reified T> get(path: String): T {
         val request = baseRequest(path).get().build()
         return execute(request)

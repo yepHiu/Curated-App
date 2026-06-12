@@ -15,6 +15,14 @@ class CuratedPlayerContractTest {
     }
 
     @Test
+    fun curatedHistoryPlayerExtrasUseMovieIdAndTitleForDirectPlayback() {
+        val extras = curatedHistoryPlayerExtras(movieId = "movie/ABC-001", title = "History Movie")
+
+        assertEquals("movie/ABC-001", extras[CuratedPlayerContract.EXTRA_MOVIE_ID])
+        assertEquals("History Movie", extras[CuratedPlayerContract.EXTRA_TITLE])
+    }
+
+    @Test
     fun playbackDescriptorStartPositionUsesMilliseconds() {
         val descriptor =
             PlaybackDescriptor(

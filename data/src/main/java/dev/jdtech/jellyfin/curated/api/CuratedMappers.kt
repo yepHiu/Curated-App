@@ -83,6 +83,14 @@ fun PlaybackDescriptorDto.toDomain(baseUrl: String): PlaybackDescriptor =
         sourceAudioCodec = sourceAudioCodec,
     )
 
+fun PlaybackProgressDto.toDomain(): PlaybackProgress =
+    PlaybackProgress(
+        movieId = movieId,
+        positionSec = positionSec,
+        durationSec = durationSec,
+        updatedAt = updatedAt,
+    )
+
 private fun String.toPlaybackMode(): PlaybackMode =
     when (lowercase()) {
         "direct" -> PlaybackMode.Direct

@@ -53,6 +53,7 @@ import dev.jdtech.jellyfin.presentation.film.MovieScreen
 import dev.jdtech.jellyfin.presentation.film.PersonScreen
 import dev.jdtech.jellyfin.presentation.film.SeasonScreen
 import dev.jdtech.jellyfin.presentation.film.ShowScreen
+import dev.jdtech.jellyfin.presentation.curated.CuratedHistoryScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMovieDetailScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMoviesScreen
 import dev.jdtech.jellyfin.presentation.settings.AboutScreen
@@ -85,6 +86,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object HomeRoute
 
 @Serializable data object MediaRoute
+
+@Serializable data object HistoryRoute
 
 @Serializable data object DownloadsRoute
 
@@ -127,6 +130,12 @@ val mediaTab =
         title = CoreR.string.title_media,
         icon = CoreR.drawable.ic_library,
         route = MediaRoute,
+    )
+val historyTab =
+    TabBarItem(
+        title = CoreR.string.title_history,
+        icon = CoreR.drawable.ic_history,
+        route = HistoryRoute,
     )
 val downloadsTab =
     TabBarItem(
@@ -320,6 +329,25 @@ fun NavigationRoot(
                     onManageServersClick = { navController.safeNavigate(ServersRoute) },
                 )
             }
+            composable<HistoryRoute> {
+                CuratedHistoryScreen(
+                    onPlayMovie = { movieId, title ->
+                        val extras = curatedHistoryPlayerExtras(movieId = movieId, title = title)
+                        context.startActivity(
+                            Intent(context, CuratedPlayerActivity::class.java).apply {
+                                putExtra(
+                                    CuratedPlayerContract.EXTRA_MOVIE_ID,
+                                    extras[CuratedPlayerContract.EXTRA_MOVIE_ID],
+                                )
+                                putExtra(
+                                    CuratedPlayerContract.EXTRA_TITLE,
+                                    extras[CuratedPlayerContract.EXTRA_TITLE],
+                                )
+                            }
+                        )
+                    }
+                )
+            }
             composable<DownloadsRoute> {
                 DownloadsScreen(
                     onItemClick = { item ->
@@ -467,7 +495,7 @@ internal fun curatedStartDestination(
     }
 
 internal fun curatedNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
-    listOf(homeTab, mediaTab)
+    listOf(homeTab, mediaTab, historyTab)
 
 internal fun isCuratedVisibleItem(item: FindroidItem): Boolean =
     when (item) {

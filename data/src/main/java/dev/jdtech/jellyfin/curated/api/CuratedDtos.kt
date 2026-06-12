@@ -109,3 +109,16 @@ data class PlaybackDescriptorDto(
     val sourceVideoCodec: String? = null,
     val sourceAudioCodec: String? = null,
 )
+
+@Serializable
+data class PlaybackProgressListDto(
+    val items: List<PlaybackProgressDto>,
+)
+
+@Serializable
+data class PlaybackProgressDto(
+    val movieId: String,
+    val positionSec: Double,
+    val durationSec: Double? = null,
+    val updatedAt: String,
+)

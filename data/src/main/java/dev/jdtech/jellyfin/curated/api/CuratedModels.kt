@@ -81,3 +81,10 @@ data class PlaybackDescriptor(
     val sourceVideoCodec: String?,
     val sourceAudioCodec: String?,
 )
+
+data class PlaybackProgress(
+    val movieId: String,
+    val positionSec: Double,
+    val durationSec: Double?,
+    val updatedAt: String,
+)
