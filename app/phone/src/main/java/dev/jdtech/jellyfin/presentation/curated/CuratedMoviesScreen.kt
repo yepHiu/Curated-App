@@ -114,7 +114,7 @@ private fun CuratedMoviesLayout(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = if (state.total > 0) "${state.total} movies" else "Movie library",
+                    text = curatedMoviesHeaderSubtitle(total = state.total),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -232,6 +232,8 @@ internal fun curatedMovieCardImageUrl(movie: MovieListItem): String? =
     movie.thumbUrl ?: movie.coverUrl
 
 internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
+
+internal fun curatedMoviesHeaderSubtitle(total: Int): String = "Movie library"
 
 internal fun curatedMoviesShouldRequestNextPage(
     lastVisibleItemIndex: Int,

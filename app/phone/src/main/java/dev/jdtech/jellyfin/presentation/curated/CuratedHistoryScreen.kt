@@ -78,12 +78,7 @@ private fun CuratedHistoryLayout(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text =
-                    if (state.items.isNotEmpty()) {
-                        stringResource(CoreR.string.history_count_label, state.items.size)
-                    } else {
-                        stringResource(CoreR.string.history_recent_activity)
-                    },
+                text = stringResource(curatedHistoryHeaderSubtitleResId(itemCount = state.items.size)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -235,6 +230,9 @@ private fun curatedHistoryMetadata(movie: MovieDetail): String =
         .filterNotNull()
         .filter { it.isNotBlank() }
         .joinToString(" / ")
+
+internal fun curatedHistoryHeaderSubtitleResId(itemCount: Int): Int =
+    CoreR.string.history_recent_activity
 
 @Composable
 private fun CuratedHistoryEmptyState() {

@@ -1,5 +1,6 @@
 package dev.jdtech.jellyfin.presentation.curated
 
+import dev.jdtech.jellyfin.core.R as CoreR
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -33,5 +34,10 @@ class CuratedHistoryFormatterTest {
         assertEquals("thumb.jpg", curatedHistoryImageUrl(thumbUrl = "thumb.jpg", coverUrl = "cover.jpg"))
         assertEquals("cover.jpg", curatedHistoryImageUrl(thumbUrl = null, coverUrl = "cover.jpg"))
         assertNull(curatedHistoryImageUrl(thumbUrl = null, coverUrl = null))
+    }
+
+    @Test
+    fun headerSubtitleDoesNotShowRecordCount() {
+        assertEquals(CoreR.string.history_recent_activity, curatedHistoryHeaderSubtitleResId(itemCount = 12))
     }
 }

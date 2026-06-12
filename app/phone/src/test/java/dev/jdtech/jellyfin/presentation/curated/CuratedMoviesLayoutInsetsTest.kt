@@ -14,4 +14,9 @@ class CuratedMoviesLayoutInsetsTest {
     fun headerTopPaddingAddsSafeDrawingTopInset() {
         assertEquals(32.dp, curatedMoviesHeaderTopPadding(24.dp))
     }
+
+    @Test
+    fun headerSubtitleDoesNotShowMovieCount() {
+        assertEquals("Movie library", curatedMoviesHeaderSubtitle(total = 125))
+    }
 }
