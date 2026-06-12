@@ -29,7 +29,6 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.media3.common.C
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
@@ -38,8 +37,8 @@ import dev.jdtech.jellyfin.databinding.ActivityPlayerBinding
 import dev.jdtech.jellyfin.player.local.presentation.PlayerEvents
 import dev.jdtech.jellyfin.player.local.presentation.PlayerViewModel
 import dev.jdtech.jellyfin.presentation.player.SpeedSelectionDialogFragment
-import dev.jdtech.jellyfin.presentation.player.TrackSelectionDialogFragment
 import dev.jdtech.jellyfin.settings.domain.AppPreferences
+import dev.jdtech.jellyfin.utils.PlayerGestureHost
 import dev.jdtech.jellyfin.utils.PlayerGestureHelper
 import dev.jdtech.jellyfin.utils.PreviewScrubListener
 import java.util.UUID
@@ -51,13 +50,20 @@ import timber.log.Timber
 var isControlsLocked: Boolean = false
 
 @AndroidEntryPoint
-class PlayerActivity : BasePlayerActivity() {
+class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
 
     @Inject lateinit var appPreferences: AppPreferences
 
     lateinit var binding: ActivityPlayerBinding
     private var playerGestureHelper: PlayerGestureHelper? = null
     override val viewModel: PlayerViewModel by viewModels()
+    override val playerGestureBinding: ActivityPlayerBinding
+        get() = binding
+    override val playerGestureWindow
+        get() = window
+    override val playerGestureContentResolver
+        get() = contentResolver
+    override val playerGestureCapabilities = defaultPlayerGestureCapabilities
     private var previewScrubListener: PreviewScrubListener? = null
     private var wasZoom: Boolean = false
     private var skipButtonTimeoutExpired: Boolean = true
@@ -131,8 +137,6 @@ class PlayerActivity : BasePlayerActivity() {
 
         val videoNameTextView = binding.playerView.findViewById<TextView>(R.id.video_name)
 
-        val audioButton = binding.playerView.findViewById<ImageButton>(R.id.btn_audio_track)
-        val subtitleButton = binding.playerView.findViewById<ImageButton>(R.id.btn_subtitle)
         val speedButton = binding.playerView.findViewById<ImageButton>(R.id.btn_speed)
         skipSegmentButton = binding.playerView.findViewById(R.id.btn_skip_segment)
         val pipButton = binding.playerView.findViewById<ImageButton>(R.id.btn_pip)
@@ -199,12 +203,8 @@ class PlayerActivity : BasePlayerActivity() {
 
                             // File Loaded
                             if (fileLoaded) {
-                                audioButton.isEnabled = true
-                                audioButton.imageAlpha = 255
                                 lockButton.isEnabled = true
                                 lockButton.imageAlpha = 255
-                                subtitleButton.isEnabled = true
-                                subtitleButton.imageAlpha = 255
                                 speedButton.isEnabled = true
                                 speedButton.imageAlpha = 255
                                 pipButton.isEnabled = true
@@ -258,14 +258,8 @@ class PlayerActivity : BasePlayerActivity() {
             }
         }
 
-        audioButton.isEnabled = false
-        audioButton.imageAlpha = 75
-
         lockButton.isEnabled = false
         lockButton.imageAlpha = 75
-
-        subtitleButton.isEnabled = false
-        subtitleButton.imageAlpha = 75
 
         speedButton.isEnabled = false
         speedButton.imageAlpha = 75
@@ -277,11 +271,6 @@ class PlayerActivity : BasePlayerActivity() {
             val pipSpace = binding.playerView.findViewById<Space>(R.id.space_pip)
             pipButton.isVisible = false
             pipSpace.isVisible = false
-        }
-
-        audioButton.setOnClickListener {
-            TrackSelectionDialogFragment(C.TRACK_TYPE_AUDIO, viewModel)
-                .show(supportFragmentManager, "trackselectiondialog")
         }
 
         val exoPlayerControlView = findViewById<FrameLayout>(R.id.player_controls)
@@ -297,13 +286,8 @@ class PlayerActivity : BasePlayerActivity() {
         unlockButton.setOnClickListener {
             exoPlayerControlView.visibility = View.VISIBLE
             lockedLayout.visibility = View.GONE
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             isControlsLocked = false
-        }
-
-        subtitleButton.setOnClickListener {
-            TrackSelectionDialogFragment(C.TRACK_TYPE_TEXT, viewModel)
-                .show(supportFragmentManager, "trackselectiondialog")
         }
 
         speedButton.setOnClickListener {
@@ -331,6 +315,12 @@ class PlayerActivity : BasePlayerActivity() {
         )
         hideSystemUI()
     }
+
+    override fun seekToPreviousChapterForGesture() = viewModel.seekToPreviousChapter()
+
+    override fun seekToNextChapterForGesture() = viewModel.seekToNextChapter()
+
+    override fun isLastChapterForGesture() = viewModel.isLastChapter()
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

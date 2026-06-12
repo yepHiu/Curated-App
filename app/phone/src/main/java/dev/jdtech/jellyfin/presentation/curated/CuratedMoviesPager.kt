@@ -1,0 +1,37 @@
+package dev.jdtech.jellyfin.presentation.curated
+
+import dev.jdtech.jellyfin.curated.repository.CuratedRepository
+
+internal class CuratedMoviesPager(
+    private val repository: CuratedRepository,
+    private val pageSize: Int = DEFAULT_PAGE_SIZE,
+) {
+    suspend fun loadFirstPage(): CuratedMoviesState {
+        val page = repository.getMovies(limit = pageSize, offset = 0)
+        return CuratedMoviesState(
+            isLoading = false,
+            movies = page.items,
+            total = page.total,
+            endReached = page.items.isEmpty() || page.items.size >= page.total,
+        )
+    }
+
+    suspend fun loadNextPage(current: CuratedMoviesState): CuratedMoviesState {
+        if (!current.canLoadMore) return current
+
+        val page = repository.getMovies(limit = pageSize, offset = current.movies.size)
+        val movies = current.movies + page.items
+        return current.copy(
+            isLoading = false,
+            isLoadingMore = false,
+            movies = movies,
+            total = page.total,
+            appendErrorMessage = null,
+            endReached = page.items.isEmpty() || movies.size >= page.total,
+        )
+    }
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 50
+    }
+}

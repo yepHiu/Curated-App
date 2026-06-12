@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.jdtech.jellyfin.settings.R
 import dev.jdtech.jellyfin.settings.domain.AppPreferences
 import dev.jdtech.jellyfin.settings.presentation.enums.DeviceType
+import dev.jdtech.jellyfin.settings.presentation.models.Preference
 import dev.jdtech.jellyfin.settings.presentation.models.PreferenceAppLanguage
 import dev.jdtech.jellyfin.settings.presentation.models.PreferenceCategory
 import dev.jdtech.jellyfin.settings.presentation.models.PreferenceGroup
@@ -32,7 +33,48 @@ internal fun isCuratedHiddenPreference(nameStringResource: Int): Boolean =
             R.string.title_download,
             R.string.theme,
             R.string.dynamic_colors,
+            R.string.settings_preferred_audio_language,
+            R.string.settings_preferred_subtitle_language,
+            R.string.settings_category_interface,
+            R.string.trickplay,
+            R.string.pref_player_trickplay,
+            R.string.pref_player_gestures_seek_trickplay,
         )
+
+internal fun curatedVisiblePreferenceGroups(
+    preferenceGroups: List<PreferenceGroup>
+): List<PreferenceGroup> =
+    preferenceGroups.mapNotNull { group ->
+        if (group.nameStringResource?.let(::isCuratedHiddenPreference) == true) {
+            return@mapNotNull null
+        }
+
+        val visiblePreferences = group.preferences.mapNotNull(::curatedVisiblePreference)
+        if (visiblePreferences.isEmpty()) {
+            null
+        } else {
+            group.copy(preferences = visiblePreferences)
+        }
+    }
+
+private fun curatedVisiblePreference(preference: Preference): Preference? {
+    if (isCuratedHiddenPreference(preference.nameStringResource)) {
+        return null
+    }
+
+    return when (preference) {
+        is PreferenceCategory -> {
+            val visibleNestedGroups =
+                curatedVisiblePreferenceGroups(preference.nestedPreferenceGroups)
+            if (preference.nestedPreferenceGroups.isNotEmpty() && visibleNestedGroups.isEmpty()) {
+                null
+            } else {
+                preference.copy(nestedPreferenceGroups = visibleNestedGroups)
+            }
+        }
+        else -> preference
+    }
+}
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(private val appPreferences: AppPreferences) :
@@ -91,32 +133,6 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
                                                 )
                                             )
                                     ),
-                                    PreferenceGroup(
-                                        preferences =
-                                            listOf(
-                                                PreferenceSelect(
-                                                    nameStringResource =
-                                                        R.string.settings_preferred_audio_language,
-                                                    iconDrawableId = R.drawable.ic_speaker,
-                                                    backendPreference =
-                                                        appPreferences.preferredAudioLanguage,
-                                                    options = R.array.languages,
-                                                    optionValues = R.array.languages_values,
-                                                    optionsIncludeNull = true,
-                                                ),
-                                                PreferenceSelect(
-                                                    nameStringResource =
-                                                        R.string
-                                                            .settings_preferred_subtitle_language,
-                                                    iconDrawableId = R.drawable.ic_closed_caption,
-                                                    backendPreference =
-                                                        appPreferences.preferredSubtitleLanguage,
-                                                    options = R.array.languages,
-                                                    optionValues = R.array.languages_values,
-                                                    optionsIncludeNull = true,
-                                                ),
-                                            )
-                                    ),
                                 ),
                         )
                     )
@@ -124,58 +140,10 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
             PreferenceGroup(
                 preferences =
                     listOf(
-                        PreferenceCategory(
-                            nameStringResource = R.string.settings_category_interface,
-                            iconDrawableId = R.drawable.ic_layout_dashboard,
-                            onClick = {
-                                viewModelScope.launch {
-                                    eventsChannel.send(
-                                        SettingsEvent.NavigateToSettings(
-                                            intArrayOf(it.nameStringResource)
-                                        )
-                                    )
-                                }
-                            },
-                            nestedPreferenceGroups =
-                                listOf(
-                                    PreferenceGroup(
-                                        nameStringResource = R.string.home,
-                                        preferences =
-                                            listOf(
-                                                PreferenceSwitch(
-                                                    nameStringResource = R.string.home_suggestions,
-                                                    backendPreference =
-                                                        appPreferences.homeSuggestions,
-                                                ),
-                                                PreferenceSwitch(
-                                                    nameStringResource =
-                                                        R.string.home_continue_watching,
-                                                    backendPreference =
-                                                        appPreferences.homeContinueWatching,
-                                                ),
-                                                PreferenceSwitch(
-                                                    nameStringResource = R.string.home_next_up,
-                                                    backendPreference = appPreferences.homeNextUp,
-                                                ),
-                                                PreferenceSwitch(
-                                                    nameStringResource = R.string.home_latest,
-                                                    backendPreference = appPreferences.homeLatest,
-                                                ),
-                                            ),
-                                    ),
-                                    PreferenceGroup(
-                                        preferences =
-                                            listOf(
-                                                PreferenceSwitch(
-                                                    nameStringResource = R.string.extra_info,
-                                                    descriptionStringRes =
-                                                        R.string.extra_info_summary,
-                                                    backendPreference =
-                                                        appPreferences.displayExtraInfo,
-                                                )
-                                            )
-                                    ),
-                                ),
+                        PreferenceSwitch(
+                            nameStringResource = R.string.extra_info,
+                            descriptionStringRes = R.string.extra_info_summary,
+                            backendPreference = appPreferences.displayExtraInfo,
                         )
                     )
             ),
@@ -465,33 +433,6 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
                                             ),
                                     ),
                                     PreferenceGroup(
-                                        nameStringResource = R.string.trickplay,
-                                        preferences =
-                                            listOf(
-                                                PreferenceSwitch(
-                                                    nameStringResource =
-                                                        R.string.pref_player_trickplay,
-                                                    descriptionStringRes =
-                                                        R.string.pref_player_trickplay_summary,
-                                                    backendPreference =
-                                                        appPreferences.playerTrickplay,
-                                                ),
-                                                PreferenceSwitch(
-                                                    nameStringResource =
-                                                        R.string
-                                                            .pref_player_gestures_seek_trickplay,
-                                                    descriptionStringRes =
-                                                        R.string
-                                                            .pref_player_gestures_seek_trickplay_summary,
-                                                    dependencies =
-                                                        listOf(appPreferences.playerTrickplay),
-                                                    supportedDeviceTypes = listOf(DeviceType.PHONE),
-                                                    backendPreference =
-                                                        appPreferences.playerGesturesSeekTrickplay,
-                                                ),
-                                            ),
-                                    ),
-                                    PreferenceGroup(
                                         nameStringResource = R.string.picture_in_picture,
                                         preferences =
                                             listOf(
@@ -692,7 +633,6 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
     fun loadPreferences(indexes: IntArray = intArrayOf(), deviceType: DeviceType) {
         viewModelScope.launch {
             var preferences = topLevelPreferences
-            val isRootSettings = indexes.isEmpty() || indexes.contains(R.string.title_settings)
 
             if (indexes.any(::isCuratedHiddenPreference)) {
                 _state.emit(_state.value.copy(preferenceGroups = emptyList()))
@@ -715,17 +655,7 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
                 }
             }
 
-            if (isRootSettings) {
-                preferences =
-                    preferences.map { preferenceGroup ->
-                        preferenceGroup.copy(
-                            preferences =
-                                preferenceGroup.preferences.filterNot {
-                                    isCuratedHiddenPreference(it.nameStringResource)
-                                }
-                        )
-                    }
-            }
+            preferences = curatedVisiblePreferenceGroups(preferences)
 
             // Update all (visible) preferences with there current values
             preferences =

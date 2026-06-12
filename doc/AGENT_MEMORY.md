@@ -38,9 +38,11 @@
 - 旧 `PlayerActivity` / `PlayerViewModel` / `PlaylistManager` 仍保留为 Findroid / Jellyfin 播放链路残留，不是当前 Curated 电影主播放路径。
 - `PlayerActivity` 和 `CuratedPlayerActivity` 进入播放页和解锁控制层后使用 `sensor` / `SCREEN_ORIENTATION_SENSOR`，让竖屏手机保持竖屏播放，只有设备传感器触发横屏时才横屏；锁定控制层时才使用 `SCREEN_ORIENTATION_LOCKED` 保持当前方向。
 - `PlayerActivity` 和 `CuratedPlayerActivity` 的播放控制条不展示音频轨道设置和字幕轨道设置入口。
+- 播放页竖屏中间控制按钮必须保持紧凑并几何居中：`exo_main_controls.xml` 中心行应占满父宽、使用 `android:gravity="center"`，按钮间距保持左右对称的 `8dp`，按钮自身保留 `16dp` padding 以维持触控面积。
 - 当前 Curated 播放闭环尚未实现 progress 回写、HLS session delete、played movies、watch time 统计和 direct 到 HLS 的显式 fallback。
 - Android 观看历史入口位于底部导航 `History` tab，首版使用只读 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
 - Android 观看历史首版不负责播放进度回写；progress 写入仍属于后续播放闭环任务。
+- Android 首页和 My media 共用 `CuratedMoviesScreen` / `CuratedMoviesViewModel`，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
 - 当前源码中的 `curatedStartPositionMs()` 只使用 `startPositionSec`，缺失时从 0 起播；`resumePositionSec` 当前被忽略。
 - Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
@@ -118,3 +120,5 @@ Agent 必须主动维护以下文档：
 - 新增 Git 提交规则：代码修改完成并验证后主动尝试提交；提交保持原子化；提交信息使用 `add:`、`fix:`、`enh:`、`docs:`、`test:`、`refactor:` 等成熟前缀。
 - 精简 Android 播放页：移除播放控制条里的音频轨道和字幕轨道设置按钮，并清理两个播放器 Activity 中对应的弹窗绑定。
 - 优化 Android 观看历史加载：电影详情补全从顺序请求调整为有上限并发请求，减少多条历史记录时的线性等待，同时保持 `updatedAt` 倒序和单条失败跳过行为。
+- 修复播放器竖屏中间控制按钮过于松散且视觉偏右的问题：中心控制行改为占满父宽并内部居中，左右按钮间距从 `32dp` 收敛为对称 `8dp`，同时保留按钮触控 padding。
+- 修复 Android 首页和 My media 电影列表只显示首个 50 条结果的问题：列表状态记录总数和下一页加载状态，滚动接近底部时继续用 `limit/offset` 拉取并追加后续影片。

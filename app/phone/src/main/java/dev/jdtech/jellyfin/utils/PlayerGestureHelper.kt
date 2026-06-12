@@ -25,20 +25,20 @@ import coil3.load
 import coil3.request.crossfade
 import coil3.request.transformations
 import coil3.transform.RoundedCornersTransformation
-import dev.jdtech.jellyfin.PlayerActivity
 import dev.jdtech.jellyfin.core.Constants
 import dev.jdtech.jellyfin.isControlsLocked
 import dev.jdtech.jellyfin.player.core.domain.models.PlayerChapter
 import dev.jdtech.jellyfin.player.core.domain.models.Trickplay
 import dev.jdtech.jellyfin.player.local.mpv.MPVPlayer
 import dev.jdtech.jellyfin.settings.domain.AppPreferences
+import dev.jdtech.jellyfin.shouldHandleChapterSkipGesture
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import timber.log.Timber
 
 class PlayerGestureHelper(
     private val appPreferences: AppPreferences,
-    private val activity: PlayerActivity,
+    private val host: PlayerGestureHost,
     private val playerView: PlayerView,
     private val audioManager: AudioManager,
 ) {
@@ -94,9 +94,15 @@ class PlayerGestureHelper(
                     // Stop long press gesture when more than 1 pointer
                     if (currentNumberOfPointers > 1) return
 
-                    // This is a temporary solution for chapter skipping.
-                    // TODO: Remove this after implementing #636
-                    if (appPreferences.getValue(appPreferences.playerGesturesChapterSkip)) {
+                    if (
+                        shouldHandleChapterSkipGesture(
+                            preferenceEnabled =
+                                appPreferences.getValue(
+                                    appPreferences.playerGesturesChapterSkip
+                                ),
+                            capabilities = host.playerGestureCapabilities,
+                        )
+                    ) {
                         handleChapterSkip(e)
                     } else {
                         enableSpeedIncrease()
@@ -140,8 +146,9 @@ class PlayerGestureHelper(
             if (it.isPlaying) {
                 lastPlaybackSpeed = it.playbackParameters.speed
                 it.setPlaybackSpeed(playbackSpeedIncrease)
-                activity.binding.gestureSpeedText.text = playbackSpeedIncrease.toString() + "x"
-                activity.binding.gestureSpeedLayout.visibility = View.VISIBLE
+                host.playerGestureBinding.gestureSpeedText.text =
+                    playbackSpeedIncrease.toString() + "x"
+                host.playerGestureBinding.gestureSpeedLayout.visibility = View.VISIBLE
             }
         }
     }
@@ -161,25 +168,25 @@ class PlayerGestureHelper(
 
         when (e.x.toInt()) {
             in leftmostAreaStart until middleAreaStart -> {
-                activity.viewModel.seekToPreviousChapter()?.let { chapter ->
+                host.seekToPreviousChapterForGesture()?.let { chapter ->
                     displayChapter(chapter)
                 }
             }
             in rightmostAreaStart until viewWidth -> {
-                if (activity.viewModel.isLastChapter()) {
+                if (host.isLastChapterForGesture()) {
                     playerView.player?.seekToNextMediaItem()
                     return
                 }
-                activity.viewModel.seekToNextChapter()?.let { chapter -> displayChapter(chapter) }
+                host.seekToNextChapterForGesture()?.let { chapter -> displayChapter(chapter) }
             }
             else -> return
         }
     }
 
     private fun displayChapter(chapter: PlayerChapter) {
-        activity.binding.progressScrubberTrickplay.visibility = View.GONE
-        activity.binding.progressScrubberLayout.visibility = View.VISIBLE
-        activity.binding.progressScrubberText.text = chapter.name ?: ""
+        host.playerGestureBinding.progressScrubberTrickplay.visibility = View.GONE
+        host.playerGestureBinding.progressScrubberLayout.visibility = View.VISIBLE
+        host.playerGestureBinding.progressScrubberText.text = chapter.name ?: ""
     }
 
     private fun fastForward() {
@@ -187,7 +194,7 @@ class PlayerGestureHelper(
         val fastForwardPosition =
             currentPosition + appPreferences.getValue(appPreferences.playerSeekForwardInc)
         seekTo(fastForwardPosition)
-        animateRipple(activity.binding.imageFfwdAnimationRipple)
+        animateRipple(host.playerGestureBinding.imageFfwdAnimationRipple)
     }
 
     private fun rewind() {
@@ -195,12 +202,12 @@ class PlayerGestureHelper(
         val rewindPosition =
             currentPosition - appPreferences.getValue(appPreferences.playerSeekBackInc)
         seekTo(rewindPosition.coerceAtLeast(0))
-        animateRipple(activity.binding.imageRewindAnimationRipple)
+        animateRipple(host.playerGestureBinding.imageRewindAnimationRipple)
     }
 
     private fun togglePlayback() {
         playerView.player?.playWhenReady = !playerView.player?.playWhenReady!!
-        animateRipple(activity.binding.imagePlaybackAnimationRipple)
+        animateRipple(host.playerGestureBinding.imagePlaybackAnimationRipple)
     }
 
     private fun seekTo(position: Long) {
@@ -270,8 +277,9 @@ class PlayerGestureHelper(
                             val difference = ((currentEvent.x - firstEvent.x) * 90).toLong()
                             val newPos = (currentPos + difference).coerceIn(0, vidDuration)
 
-                            activity.binding.progressScrubberLayout.visibility = View.VISIBLE
-                            activity.binding.progressScrubberText.text =
+                            host.playerGestureBinding.progressScrubberLayout.visibility =
+                                View.VISIBLE
+                            host.playerGestureBinding.progressScrubberText.text =
                                 "${longToTimestamp(difference)} [${longToTimestamp(newPos, true)}]"
                             swipeGestureValueTrackerProgress = newPos
 
@@ -279,11 +287,11 @@ class PlayerGestureHelper(
                                 appPreferences.getValue(appPreferences.playerGesturesSeekTrickplay)
                             ) {
                                 if (currentTrickplay != null) {
-                                    activity.binding.progressScrubberTrickplay.visibility =
+                                    host.playerGestureBinding.progressScrubberTrickplay.visibility =
                                         View.VISIBLE
                                     updateTrickplayImage(newPos)
                                 } else {
-                                    activity.binding.progressScrubberTrickplay.visibility =
+                                    host.playerGestureBinding.progressScrubberTrickplay.visibility =
                                         View.GONE
                                 }
                             }
@@ -350,35 +358,41 @@ class PlayerGestureHelper(
                             0,
                         )
 
-                        activity.binding.gestureVolumeLayout.visibility = View.VISIBLE
-                        activity.binding.gestureVolumeProgressBar.max = maxVolume.times(100)
-                        activity.binding.gestureVolumeProgressBar.progress =
+                        host.playerGestureBinding.gestureVolumeLayout.visibility = View.VISIBLE
+                        host.playerGestureBinding.gestureVolumeProgressBar.max =
+                            maxVolume.times(100)
+                        host.playerGestureBinding.gestureVolumeProgressBar.progress =
                             swipeGestureValueTrackerVolume.times(100).toInt()
                         val process =
                             (swipeGestureValueTrackerVolume / maxVolume.toFloat())
                                 .times(100)
                                 .toInt()
-                        activity.binding.gestureVolumeText.text = "$process%"
-                        activity.binding.gestureVolumeImage.setImageLevel(process)
+                        host.playerGestureBinding.gestureVolumeText.text = "$process%"
+                        host.playerGestureBinding.gestureVolumeImage.setImageLevel(process)
 
                         swipeGestureVolumeOpen = true
                     } else {
                         // Swiping on the left, change brightness
-                        val window = activity.window
+                        val window = host.playerGestureWindow
                         val brightnessRange = BRIGHTNESS_OVERRIDE_OFF..BRIGHTNESS_OVERRIDE_FULL
 
                         // Initialize on first swipe
                         if (swipeGestureValueTrackerBrightness == -1f) {
                             val brightness = window.attributes.screenBrightness
                             Timber.d(
-                                "Brightness ${Settings.System.getFloat(activity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)}"
+                                "Brightness ${
+                                    Settings.System.getFloat(
+                                        host.playerGestureContentResolver,
+                                        Settings.System.SCREEN_BRIGHTNESS,
+                                    )
+                                }"
                             )
                             swipeGestureValueTrackerBrightness =
                                 when (brightness) {
                                     in brightnessRange -> brightness
                                     else ->
                                         Settings.System.getFloat(
-                                            activity.contentResolver,
+                                            host.playerGestureContentResolver,
                                             Settings.System.SCREEN_BRIGHTNESS,
                                         ) / 255
                                 }
@@ -391,15 +405,15 @@ class PlayerGestureHelper(
                         lp.screenBrightness = swipeGestureValueTrackerBrightness
                         window.attributes = lp
 
-                        activity.binding.gestureBrightnessLayout.visibility = View.VISIBLE
-                        activity.binding.gestureBrightnessProgressBar.max =
+                        host.playerGestureBinding.gestureBrightnessLayout.visibility = View.VISIBLE
+                        host.playerGestureBinding.gestureBrightnessProgressBar.max =
                             BRIGHTNESS_OVERRIDE_FULL.times(100).toInt()
-                        activity.binding.gestureBrightnessProgressBar.progress =
+                        host.playerGestureBinding.gestureBrightnessProgressBar.progress =
                             lp.screenBrightness.times(100).toInt()
                         val process =
                             (lp.screenBrightness / BRIGHTNESS_OVERRIDE_FULL).times(100).toInt()
-                        activity.binding.gestureBrightnessText.text = "$process%"
-                        activity.binding.gestureBrightnessImage.setImageLevel(process)
+                        host.playerGestureBinding.gestureBrightnessText.text = "$process%"
+                        host.playerGestureBinding.gestureBrightnessImage.setImageLevel(process)
 
                         swipeGestureBrightnessOpen = true
                     }
@@ -409,21 +423,21 @@ class PlayerGestureHelper(
         )
 
     private val hideGestureVolumeIndicatorOverlayAction = Runnable {
-        activity.binding.gestureVolumeLayout.visibility = View.GONE
+        host.playerGestureBinding.gestureVolumeLayout.visibility = View.GONE
     }
 
     private val hideGestureBrightnessIndicatorOverlayAction = Runnable {
-        activity.binding.gestureBrightnessLayout.visibility = View.GONE
+        host.playerGestureBinding.gestureBrightnessLayout.visibility = View.GONE
         if (appPreferences.getValue(appPreferences.playerGesturesBrightnessRemember)) {
             appPreferences.setValue(
                 appPreferences.playerBrightness,
-                activity.window.attributes.screenBrightness,
+                host.playerGestureWindow.attributes.screenBrightness,
             )
         }
     }
 
     private val hideGestureProgressOverlayAction = Runnable {
-        activity.binding.progressScrubberLayout.visibility = View.GONE
+        host.playerGestureBinding.progressScrubberLayout.visibility = View.GONE
     }
 
     /** Handles scale/zoom gesture */
@@ -466,21 +480,21 @@ class PlayerGestureHelper(
 
     private fun releaseAction(event: MotionEvent) {
         if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-            activity.binding.gestureVolumeLayout.apply {
+            host.playerGestureBinding.gestureVolumeLayout.apply {
                 if (isVisible) {
                     removeCallbacks(hideGestureVolumeIndicatorOverlayAction)
                     postDelayed(hideGestureVolumeIndicatorOverlayAction, 1000)
                     swipeGestureVolumeOpen = false
                 }
             }
-            activity.binding.gestureBrightnessLayout.apply {
+            host.playerGestureBinding.gestureBrightnessLayout.apply {
                 if (isVisible) {
                     removeCallbacks(hideGestureBrightnessIndicatorOverlayAction)
                     postDelayed(hideGestureBrightnessIndicatorOverlayAction, 1000)
                     swipeGestureBrightnessOpen = false
                 }
             }
-            activity.binding.progressScrubberLayout.apply {
+            host.playerGestureBinding.progressScrubberLayout.apply {
                 if (isVisible) {
                     if (swipeGestureValueTrackerProgress > -1) {
                         playerView.player?.seekTo(swipeGestureValueTrackerProgress)
@@ -500,7 +514,7 @@ class PlayerGestureHelper(
         ) {
             playerView.player?.setPlaybackSpeed(lastPlaybackSpeed)
             lastPlaybackSpeed = 0f
-            activity.binding.gestureSpeedLayout.visibility = View.GONE
+            host.playerGestureBinding.gestureSpeedLayout.visibility = View.GONE
         }
     }
 
@@ -555,7 +569,7 @@ class PlayerGestureHelper(
             val bitmap = trickplay.images[position.div(trickplay.interval).toInt()]
 
             if (currentTrickplayBitmap != bitmap) {
-                activity.binding.progressScrubberTrickplay.load(bitmap) {
+                host.playerGestureBinding.progressScrubberTrickplay.load(bitmap) {
                     coroutineContext(Dispatchers.Main.immediate)
                     crossfade(false)
                     transformations(trickplayRoundedCorners)
@@ -563,7 +577,7 @@ class PlayerGestureHelper(
                 currentTrickplayBitmap = bitmap
             }
         } catch (e: Exception) {
-            activity.binding.progressScrubberTrickplay.visibility = View.GONE
+            host.playerGestureBinding.progressScrubberTrickplay.visibility = View.GONE
             Timber.d(e)
         }
     }
@@ -573,8 +587,8 @@ class PlayerGestureHelper(
             appPreferences.getValue(appPreferences.playerGesturesVB) &&
                 appPreferences.getValue(appPreferences.playerGesturesBrightnessRemember)
         ) {
-            activity.window.attributes =
-                activity.window.attributes.apply {
+            host.playerGestureWindow.attributes =
+                host.playerGestureWindow.attributes.apply {
                     screenBrightness = appPreferences.getValue(appPreferences.playerBrightness)
                 }
         }

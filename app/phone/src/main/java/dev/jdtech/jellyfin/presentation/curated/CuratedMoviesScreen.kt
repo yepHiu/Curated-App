@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -21,14 +24,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +42,8 @@ import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.core.R as CoreR
 import dev.jdtech.jellyfin.curated.api.MovieListItem
 import dev.jdtech.jellyfin.presentation.utils.GridCellsAdaptiveWithMinColumns
+import dev.jdtech.jellyfin.presentation.utils.rememberSafePadding
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun CuratedMoviesScreen(
@@ -50,6 +58,7 @@ fun CuratedMoviesScreen(
         state = state,
         onMovieClick = onMovieClick,
         onRetryClick = viewModel::loadMovies,
+        onLoadMore = viewModel::loadNextPage,
         onSettingsClick = onSettingsClick,
         onManageServersClick = onManageServersClick,
     )
@@ -60,13 +69,43 @@ private fun CuratedMoviesLayout(
     state: CuratedMoviesState,
     onMovieClick: (String) -> Unit,
     onRetryClick: () -> Unit,
+    onLoadMore: () -> Unit,
     onSettingsClick: () -> Unit,
     onManageServersClick: () -> Unit,
 ) {
+    val safePadding = rememberSafePadding(handleStartInsets = false)
+    val gridState = rememberLazyGridState()
+
+    LaunchedEffect(gridState, state.movies.size, state.canLoadMore, state.appendErrorMessage) {
+        snapshotFlow {
+                val layoutInfo = gridState.layoutInfo
+                val lastVisibleItemIndex =
+                    layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                curatedMoviesShouldRequestNextPage(
+                    lastVisibleItemIndex = lastVisibleItemIndex,
+                    totalItemCount = layoutInfo.totalItemsCount,
+                    canLoadMore = state.canLoadMore && state.appendErrorMessage == null,
+                )
+            }
+            .distinctUntilChanged()
+            .collect { shouldLoadMore ->
+                if (shouldLoadMore) {
+                    onLoadMore()
+                }
+            }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(
+                        start = 16.dp,
+                        top = curatedMoviesHeaderTopPadding(safePadding.top),
+                        end = 16.dp,
+                        bottom = 8.dp,
+                    ),
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -111,6 +150,7 @@ private fun CuratedMoviesLayout(
             else -> {
                 LazyVerticalGrid(
                     columns = GridCellsAdaptiveWithMinColumns(minSize = 150.dp, minColumns = 2),
+                    state = gridState,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(16.dp),
@@ -118,6 +158,18 @@ private fun CuratedMoviesLayout(
                 ) {
                     items(state.movies, key = { it.id }) { movie ->
                         CuratedMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
+                    }
+                    if (state.isLoadingMore || state.appendErrorMessage != null) {
+                        item(
+                            key = "curated-movies-load-more",
+                            span = { GridItemSpan(maxLineSpan) },
+                        ) {
+                            CuratedMoviesLoadMoreFooter(
+                                isLoading = state.isLoadingMore,
+                                errorMessage = state.appendErrorMessage,
+                                onRetryClick = onLoadMore,
+                            )
+                        }
                     }
                 }
             }
@@ -178,6 +230,47 @@ private fun CuratedMovieCard(movie: MovieListItem, onClick: () -> Unit) {
 
 internal fun curatedMovieCardImageUrl(movie: MovieListItem): String? =
     movie.thumbUrl ?: movie.coverUrl
+
+internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
+
+internal fun curatedMoviesShouldRequestNextPage(
+    lastVisibleItemIndex: Int,
+    totalItemCount: Int,
+    canLoadMore: Boolean,
+    loadAheadItemCount: Int = 6,
+): Boolean =
+    canLoadMore &&
+        totalItemCount > 0 &&
+        lastVisibleItemIndex >= 0 &&
+        lastVisibleItemIndex >= totalItemCount - loadAheadItemCount
+
+@Composable
+private fun CuratedMoviesLoadMoreFooter(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onRetryClick: () -> Unit,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        } else if (errorMessage != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Button(onClick = onRetryClick) { Text("Retry") }
+            }
+        }
+    }
+}
 
 @Composable
 private fun CuratedErrorState(message: String, onRetryClick: () -> Unit) {

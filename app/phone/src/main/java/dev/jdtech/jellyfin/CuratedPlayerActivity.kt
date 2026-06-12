@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Rect
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -28,7 +29,6 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.media3.common.C
 import androidx.media3.session.MediaSession
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
@@ -37,16 +37,32 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.jdtech.jellyfin.databinding.ActivityPlayerBinding
 import dev.jdtech.jellyfin.presentation.curated.CuratedPlayerEvent
 import dev.jdtech.jellyfin.presentation.curated.CuratedPlayerViewModel
+import dev.jdtech.jellyfin.settings.domain.AppPreferences
+import dev.jdtech.jellyfin.utils.PlayerGestureHost
+import dev.jdtech.jellyfin.utils.PlayerGestureHelper
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @AndroidEntryPoint
-class CuratedPlayerActivity : AppCompatActivity() {
+class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
     private val viewModel: CuratedPlayerViewModel by viewModels()
+
+    @Inject lateinit var appPreferences: AppPreferences
 
     private lateinit var binding: ActivityPlayerBinding
     private lateinit var mediaSession: MediaSession
+    private var playerGestureHelper: PlayerGestureHelper? = null
     private var wasPip: Boolean = false
+    private var wasZoom: Boolean = false
+
+    override val playerGestureBinding: ActivityPlayerBinding
+        get() = binding
+    override val playerGestureWindow
+        get() = window
+    override val playerGestureContentResolver
+        get() = contentResolver
+    override val playerGestureCapabilities = curatedPlayerGestureCapabilities
 
     private val isPipSupported by lazy {
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
@@ -91,9 +107,17 @@ class CuratedPlayerActivity : AppCompatActivity() {
         configureInsets(playerControls)
         configureInsets(lockedControls)
 
+        if (appPreferences.getValue(appPreferences.playerGestures)) {
+            playerGestureHelper =
+                PlayerGestureHelper(
+                    appPreferences,
+                    this,
+                    binding.playerView,
+                    getSystemService(AUDIO_SERVICE) as AudioManager,
+                )
+        }
+
         val videoNameTextView = binding.playerView.findViewById<TextView>(R.id.video_name)
-        val audioButton = binding.playerView.findViewById<ImageButton>(R.id.btn_audio_track)
-        val subtitleButton = binding.playerView.findViewById<ImageButton>(R.id.btn_subtitle)
         val speedButton = binding.playerView.findViewById<ImageButton>(R.id.btn_speed)
         val pipButton = binding.playerView.findViewById<ImageButton>(R.id.btn_pip)
         val lockButton = binding.playerView.findViewById<ImageButton>(R.id.btn_lockview)
@@ -116,12 +140,10 @@ class CuratedPlayerActivity : AppCompatActivity() {
         unlockButton.setOnClickListener {
             playerControlView.visibility = View.VISIBLE
             lockedLayout.visibility = View.GONE
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             isControlsLocked = false
         }
         speedButton.setOnClickListener { showSpeedDialog() }
-        audioButton.setOnClickListener { showTrackDialog(C.TRACK_TYPE_AUDIO) }
-        subtitleButton.setOnClickListener { showTrackDialog(C.TRACK_TYPE_TEXT) }
         pipButton.setOnClickListener { pictureInPicture() }
 
         if (isPipSupported) {
@@ -133,10 +155,6 @@ class CuratedPlayerActivity : AppCompatActivity() {
             pipSpace.isVisible = false
         }
 
-        audioButton.isEnabled = false
-        audioButton.imageAlpha = 75
-        subtitleButton.isEnabled = false
-        subtitleButton.imageAlpha = 75
         speedButton.isEnabled = true
         speedButton.imageAlpha = 255
         lockButton.isEnabled = true
@@ -151,10 +169,6 @@ class CuratedPlayerActivity : AppCompatActivity() {
                     viewModel.uiState.collect { state ->
                         videoNameTextView.text = state.currentTitle
                         if (state.fileLoaded) {
-                            audioButton.isEnabled = true
-                            audioButton.imageAlpha = 255
-                            subtitleButton.isEnabled = true
-                            subtitleButton.imageAlpha = 255
                             pipButton.isEnabled = isPipSupported
                             pipButton.imageAlpha = if (isPipSupported) 255 else 75
                         }
@@ -255,37 +269,6 @@ class CuratedPlayerActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showTrackDialog(trackType: @C.TrackType Int) {
-        val groups =
-            viewModel.player.currentTracks.groups.filter {
-                it.type == trackType && it.isSupported
-            }
-        val title =
-            when (trackType) {
-                C.TRACK_TYPE_AUDIO ->
-                    dev.jdtech.jellyfin.player.local.R.string.select_audio_track
-                C.TRACK_TYPE_TEXT ->
-                    dev.jdtech.jellyfin.player.local.R.string.select_subtitle_track
-                else -> return
-            }
-        val labels =
-            arrayOf(getString(dev.jdtech.jellyfin.player.local.R.string.none)) +
-                groups.mapIndexed { index, group ->
-                    group.mediaTrackGroup.getFormat(0).label
-                        ?: group.mediaTrackGroup.getFormat(0).language
-                        ?: "Track ${index + 1}"
-                }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(title))
-            .setSingleChoiceItems(labels, groups.indexOfFirst { it.isSelected } + 1) {
-                dialog,
-                which ->
-                viewModel.switchToTrack(trackType, which - 1)
-                dialog.dismiss()
-            }
-            .show()
-    }
-
     private fun pipParams(
         enableAutoEnter: Boolean = viewModel.player.isPlaying
     ): PictureInPictureParams {
@@ -356,7 +339,33 @@ class CuratedPlayerActivity : AppCompatActivity() {
         newConfig: Configuration,
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        binding.playerView.useController = !isInPictureInPictureMode
+        when (isInPictureInPictureMode) {
+            true -> {
+                binding.playerView.useController = false
+                wasZoom = playerGestureHelper?.isZoomEnabled == true
+                playerGestureHelper?.updateZoomMode(false)
+
+                window.attributes =
+                    window.attributes.apply {
+                        screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                    }
+            }
+            false -> {
+                binding.playerView.useController = true
+                playerGestureHelper?.updateZoomMode(wasZoom)
+
+                if (
+                    appPreferences.getValue(appPreferences.playerGesturesVB) &&
+                        appPreferences.getValue(appPreferences.playerGesturesBrightnessRemember)
+                ) {
+                    window.attributes =
+                        window.attributes.apply {
+                            screenBrightness =
+                                appPreferences.getValue(appPreferences.playerBrightness)
+                        }
+                }
+            }
+        }
     }
 
     private fun hideSystemUI() {
