@@ -9,9 +9,14 @@ import dev.jdtech.jellyfin.curated.repository.CuratedRepository
 import dev.jdtech.jellyfin.curated.repository.CuratedRepositoryFactory
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 @HiltViewModel
 class CuratedHistoryViewModel
@@ -53,20 +58,31 @@ data class CuratedHistoryItem(
     val progress: PlaybackProgress,
 )
 
-internal class CuratedHistoryLoader(private val repository: CuratedRepository) {
-    suspend fun load(): List<CuratedHistoryItem> =
+internal class CuratedHistoryLoader(
+    private val repository: CuratedRepository,
+    private val maxConcurrentMovieRequests: Int = 6,
+) {
+    suspend fun load(): List<CuratedHistoryItem> = coroutineScope {
+        val movieRequestSemaphore = Semaphore(maxConcurrentMovieRequests)
         repository
             .getPlaybackProgress()
             .sortedByDescending { it.updatedAt }
-            .mapNotNull { progress ->
-                runCatching {
-                        CuratedHistoryItem(
-                            movie = repository.getMovie(progress.movieId),
-                            progress = progress,
-                        )
+            .map { progress ->
+                async {
+                    movieRequestSemaphore.withPermit {
+                        runCatching {
+                                CuratedHistoryItem(
+                                    movie = repository.getMovie(progress.movieId),
+                                    progress = progress,
+                                )
+                            }
+                            .getOrNull()
                     }
-                    .getOrNull()
+                }
             }
+            .awaitAll()
+            .filterNotNull()
+    }
 }
 
 internal fun curatedHistoryProgressFraction(positionSec: Double, durationSec: Double?): Float {

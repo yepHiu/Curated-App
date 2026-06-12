@@ -5,8 +5,11 @@ import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
 import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 import dev.jdtech.jellyfin.curated.repository.CuratedRepository
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CuratedHistoryLoaderTest {
@@ -33,10 +36,39 @@ class CuratedHistoryLoaderTest {
         assertEquals(listOf("2026-06-10T12:00:00Z", "2026-06-07T12:00:00Z"), items.map { it.progress.updatedAt })
     }
 
+    @Test
+    fun loadFetchesMovieDetailsConcurrentlyAndPreservesHistoryOrder() = runBlocking {
+        val repository =
+            FakeCuratedRepository(
+                progress =
+                    listOf(
+                        playbackProgress(movieId = "movie-1", updatedAt = "2026-06-10T12:00:00Z"),
+                        playbackProgress(movieId = "movie-2", updatedAt = "2026-06-09T12:00:00Z"),
+                        playbackProgress(movieId = "movie-3", updatedAt = "2026-06-08T12:00:00Z"),
+                    ),
+                movies =
+                    mapOf(
+                        "movie-1" to movieDetail(id = "movie-1", title = "Movie 1"),
+                        "movie-2" to movieDetail(id = "movie-2", title = "Movie 2"),
+                        "movie-3" to movieDetail(id = "movie-3", title = "Movie 3"),
+                    ),
+                movieDelayMillis = 50,
+            )
+
+        val items = CuratedHistoryLoader(repository).load()
+
+        assertEquals(listOf("movie-1", "movie-2", "movie-3"), items.map { it.movie.id })
+        assertTrue("Expected concurrent detail requests", repository.maxConcurrentMovieRequests.get() > 1)
+    }
+
     private class FakeCuratedRepository(
         private val progress: List<PlaybackProgress>,
         private val movies: Map<String, MovieDetail>,
+        private val movieDelayMillis: Long = 0,
     ) : CuratedRepository {
+        private val activeMovieRequests = AtomicInteger(0)
+        val maxConcurrentMovieRequests = AtomicInteger(0)
+
         override suspend fun getMovies(
             limit: Int,
             offset: Int,
@@ -46,8 +78,18 @@ class CuratedHistoryLoaderTest {
             mode: String?,
         ): MoviesPage = error("Not used")
 
-        override suspend fun getMovie(movieId: String): MovieDetail =
-            movies[movieId] ?: error("Missing movie $movieId")
+        override suspend fun getMovie(movieId: String): MovieDetail {
+            val active = activeMovieRequests.incrementAndGet()
+            maxConcurrentMovieRequests.updateAndGet { current -> maxOf(current, active) }
+            return try {
+                if (movieDelayMillis > 0) {
+                    delay(movieDelayMillis)
+                }
+                movies[movieId] ?: error("Missing movie $movieId")
+            } finally {
+                activeMovieRequests.decrementAndGet()
+            }
+        }
 
         override suspend fun getPlaybackDescriptor(movieId: String): PlaybackDescriptor =
             error("Not used")
