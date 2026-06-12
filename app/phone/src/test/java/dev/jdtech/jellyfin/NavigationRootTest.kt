@@ -4,6 +4,7 @@ import dev.jdtech.jellyfin.core.presentation.dummy.dummyEpisode
 import dev.jdtech.jellyfin.core.presentation.dummy.dummyMovie
 import dev.jdtech.jellyfin.core.presentation.dummy.dummySeason
 import dev.jdtech.jellyfin.core.presentation.dummy.dummyShow
+import dev.jdtech.jellyfin.core.presentation.theme.ColorDark
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -70,5 +71,21 @@ class NavigationRootTest {
         assertFalse(isCuratedVisibleItem(dummyShow))
         assertFalse(isCuratedVisibleItem(dummySeason))
         assertFalse(isCuratedVisibleItem(dummyEpisode))
+    }
+
+    @Test
+    fun curatedNavigationSelectedLabelUsesHighContrastContentColor() {
+        val colors =
+            curatedNavigationItemColorSpec(
+                selectedContentColor = ColorDark.onSurfaceDark,
+                unselectedContentColor = ColorDark.onSurfaceVariantDark,
+                selectedIndicatorColor = ColorDark.primaryContainerDark,
+            )
+
+        assertEquals(ColorDark.onSurfaceDark, colors.selectedTextColor)
+        assertEquals(ColorDark.onSurfaceDark, colors.selectedIconColor)
+        assertEquals(ColorDark.onSurfaceVariantDark, colors.unselectedTextColor)
+        assertEquals(ColorDark.onSurfaceVariantDark, colors.unselectedIconColor)
+        assertEquals(ColorDark.primaryContainerDark, colors.selectedIndicatorColor)
     }
 }

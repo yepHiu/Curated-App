@@ -305,7 +305,19 @@ Android 可用非常轻的顶部品牌光晕，但不能让背景变成大面积
 - 文字：`primary`
 - 边框：`primary.copy(alpha = 0.25f)` 到 `0.35f`
 
-### 5.6 媒体封面和播放器
+### 5.6 导航栏
+
+底部导航、NavigationRail 和 Drawer item 必须显式设置选中态和未选中态颜色，不能完全依赖 Material 默认 token：
+
+- 选中态图标：`onSurface`
+- 选中态文字：`onSurface`
+- 选中态指示器 / 容器：`primaryContainer`
+- 未选中态图标：`onSurfaceVariant`
+- 未选中态文字：`onSurfaceVariant`
+
+原因：Curated 默认深色主题下，选中态标签如果落到默认灰色 token，会在底部导航中显得发灰、可视度下降；选中项应通过高对比文字和弱品牌色指示器共同表达。
+
+### 5.7 媒体封面和播放器
 
 媒体区域允许使用局部专用颜色：
 

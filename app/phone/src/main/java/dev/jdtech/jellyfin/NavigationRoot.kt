@@ -7,8 +7,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItemColors
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -19,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -196,6 +203,7 @@ fun NavigationRoot(
                 NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(this)
             }
         }
+    val navigationItemColors = curatedNavigationItemColors()
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -219,6 +227,7 @@ fun NavigationRoot(
                     },
                     enabled = item.enabled,
                     label = { Text(text = stringResource(item.title)) },
+                    colors = navigationItemColors,
                 )
             }
         },
@@ -479,6 +488,64 @@ fun NavigationRoot(
             }
         }
     }
+}
+
+data class CuratedNavigationItemColorSpec(
+    val selectedIconColor: Color,
+    val selectedTextColor: Color,
+    val selectedIndicatorColor: Color,
+    val unselectedIconColor: Color,
+    val unselectedTextColor: Color,
+)
+
+internal fun curatedNavigationItemColorSpec(
+    selectedContentColor: Color,
+    unselectedContentColor: Color,
+    selectedIndicatorColor: Color,
+): CuratedNavigationItemColorSpec =
+    CuratedNavigationItemColorSpec(
+        selectedIconColor = selectedContentColor,
+        selectedTextColor = selectedContentColor,
+        selectedIndicatorColor = selectedIndicatorColor,
+        unselectedIconColor = unselectedContentColor,
+        unselectedTextColor = unselectedContentColor,
+    )
+
+@Composable
+private fun curatedNavigationItemColors(): NavigationSuiteItemColors {
+    val colors =
+        curatedNavigationItemColorSpec(
+            selectedContentColor = MaterialTheme.colorScheme.onSurface,
+            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedIndicatorColor = MaterialTheme.colorScheme.primaryContainer,
+        )
+
+    return NavigationSuiteDefaults.itemColors(
+        navigationBarItemColors =
+            NavigationBarItemDefaults.colors(
+                selectedIconColor = colors.selectedIconColor,
+                selectedTextColor = colors.selectedTextColor,
+                indicatorColor = colors.selectedIndicatorColor,
+                unselectedIconColor = colors.unselectedIconColor,
+                unselectedTextColor = colors.unselectedTextColor,
+            ),
+        navigationRailItemColors =
+            NavigationRailItemDefaults.colors(
+                selectedIconColor = colors.selectedIconColor,
+                selectedTextColor = colors.selectedTextColor,
+                indicatorColor = colors.selectedIndicatorColor,
+                unselectedIconColor = colors.unselectedIconColor,
+                unselectedTextColor = colors.unselectedTextColor,
+            ),
+        navigationDrawerItemColors =
+            NavigationDrawerItemDefaults.colors(
+                selectedIconColor = colors.selectedIconColor,
+                selectedTextColor = colors.selectedTextColor,
+                selectedContainerColor = colors.selectedIndicatorColor,
+                unselectedIconColor = colors.unselectedIconColor,
+                unselectedTextColor = colors.unselectedTextColor,
+            ),
+    )
 }
 
 internal fun curatedStartDestination(
