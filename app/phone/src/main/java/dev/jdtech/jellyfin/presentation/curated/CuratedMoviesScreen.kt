@@ -1,6 +1,8 @@
 package dev.jdtech.jellyfin.presentation.curated
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,16 +25,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -58,6 +69,7 @@ fun CuratedMoviesScreen(
         onMovieClick = onMovieClick,
         onRetryClick = viewModel::loadMovies,
         onLoadMore = viewModel::loadNextPage,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
         onSettingsClick = onSettingsClick,
     )
 }
@@ -68,6 +80,7 @@ private fun CuratedMoviesLayout(
     onMovieClick: (String) -> Unit,
     onRetryClick: () -> Unit,
     onLoadMore: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
@@ -93,8 +106,10 @@ private fun CuratedMoviesLayout(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        CuratedMoviesHeader(
+            state = state,
+            onSearchQueryChange = onSearchQueryChange,
+            onSettingsClick = onSettingsClick,
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(
@@ -103,26 +118,7 @@ private fun CuratedMoviesLayout(
                         end = 16.dp,
                         bottom = 8.dp,
                     ),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Curated",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = curatedMoviesHeaderSubtitle(total = state.total),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    painter = painterResource(CoreR.drawable.ic_settings),
-                    contentDescription = curatedMoviesHeaderActionContentDescriptions().single(),
-                )
-            }
-        }
+        )
 
         when {
             state.isLoading -> {
@@ -135,7 +131,7 @@ private fun CuratedMoviesLayout(
             }
             state.movies.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No movies found")
+                    Text(text = curatedMoviesSearchEmptyMessage(state.searchQuery))
                 }
             }
             else -> {
@@ -164,6 +160,95 @@ private fun CuratedMoviesLayout(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CuratedMoviesHeader(
+    state: CuratedMoviesState,
+    onSearchQueryChange: (String) -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    var searchActive by rememberSaveable { mutableStateOf(false) }
+    val showSearch = searchActive || state.searchQuery.isNotBlank()
+    val actionContentDescriptions = curatedMoviesHeaderActionContentDescriptions()
+
+    LaunchedEffect(searchActive) {
+        if (searchActive) {
+            focusRequester.requestFocus()
+        }
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        if (showSearch) {
+            IconButton(
+                onClick = {
+                    searchActive = false
+                    focusManager.clearFocus()
+                    onSearchQueryChange("")
+                }
+            ) {
+                Icon(
+                    painter = painterResource(CoreR.drawable.ic_arrow_left),
+                    contentDescription = curatedMoviesSearchCloseContentDescription(),
+                )
+            }
+            OutlinedTextField(
+                value = state.searchQuery,
+                onValueChange = onSearchQueryChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge,
+                placeholder = { Text(text = curatedMoviesSearchPlaceholder()) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(CoreR.drawable.ic_search),
+                        contentDescription = null,
+                    )
+                },
+                trailingIcon = {
+                    if (state.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Icon(
+                                painter = painterResource(CoreR.drawable.ic_x),
+                                contentDescription = curatedMoviesSearchClearContentDescription(),
+                            )
+                        }
+                    }
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            )
+        } else {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Curated",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = curatedMoviesHeaderSubtitle(total = state.total),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = { searchActive = true }) {
+                Icon(
+                    painter = painterResource(CoreR.drawable.ic_search),
+                    contentDescription = actionContentDescriptions[0],
+                )
+            }
+        }
+
+        IconButton(onClick = onSettingsClick) {
+            Icon(
+                painter = painterResource(CoreR.drawable.ic_settings),
+                contentDescription = actionContentDescriptions[1],
+            )
         }
     }
 }
@@ -226,7 +311,21 @@ internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawing
 
 internal fun curatedMoviesHeaderSubtitle(total: Int): String = "Movie library"
 
-internal fun curatedMoviesHeaderActionContentDescriptions(): List<String> = listOf("Settings")
+internal fun curatedMoviesHeaderActionContentDescriptions(): List<String> =
+    listOf("Search", "Settings")
+
+internal fun curatedMoviesSearchPlaceholder(): String = "Search movies"
+
+internal fun curatedMoviesSearchCloseContentDescription(): String = "Close search"
+
+internal fun curatedMoviesSearchClearContentDescription(): String = "Clear search"
+
+internal fun curatedMoviesSearchEmptyMessage(searchQuery: String): String =
+    if (curatedMoviesNormalizedSearchQuery(searchQuery) == null) {
+        "No movies found"
+    } else {
+        "No matching movies"
+    }
 
 internal fun curatedMoviesShouldRequestNextPage(
     lastVisibleItemIndex: Int,

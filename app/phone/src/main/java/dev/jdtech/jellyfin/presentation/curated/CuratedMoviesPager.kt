@@ -5,13 +5,15 @@ import dev.jdtech.jellyfin.curated.repository.CuratedRepository
 internal class CuratedMoviesPager(
     private val repository: CuratedRepository,
     private val pageSize: Int = DEFAULT_PAGE_SIZE,
+    private val query: String? = null,
 ) {
-    suspend fun loadFirstPage(): CuratedMoviesState {
-        val page = repository.getMovies(limit = pageSize, offset = 0)
+    suspend fun loadFirstPage(searchQuery: String = query.orEmpty()): CuratedMoviesState {
+        val page = repository.getMovies(limit = pageSize, offset = 0, query = query)
         return CuratedMoviesState(
             isLoading = false,
             movies = page.items,
             total = page.total,
+            searchQuery = searchQuery,
             endReached = page.items.isEmpty() || page.items.size >= page.total,
         )
     }
@@ -19,7 +21,8 @@ internal class CuratedMoviesPager(
     suspend fun loadNextPage(current: CuratedMoviesState): CuratedMoviesState {
         if (!current.canLoadMore) return current
 
-        val page = repository.getMovies(limit = pageSize, offset = current.movies.size)
+        val page =
+            repository.getMovies(limit = pageSize, offset = current.movies.size, query = query)
         val movies = current.movies + page.items
         return current.copy(
             isLoading = false,
@@ -35,3 +38,6 @@ internal class CuratedMoviesPager(
         const val DEFAULT_PAGE_SIZE = 50
     }
 }
+
+internal fun curatedMoviesNormalizedSearchQuery(query: String): String? =
+    query.trim().takeIf { it.isNotEmpty() }

@@ -43,6 +43,7 @@
 - Android 观看历史入口位于底部导航 `History` tab，首版使用只读 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
 - Android 观看历史首版不负责播放进度回写；progress 写入仍属于后续播放闭环任务。
 - Android 首页和 My media 共用 `CuratedMoviesScreen` / `CuratedMoviesViewModel`，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
+- Android 首页和 My media 顶部栏包含搜索入口和设置入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
 - 当前源码中的 `curatedStartPositionMs()` 只使用 `startPositionSec`，缺失时从 0 起播；`resumePositionSec` 当前被忽略。
 - Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
 - Curated 首页 / My media 顶部栏只保留设置入口，不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
@@ -128,3 +129,4 @@ Agent 必须主动维护以下文档：
 - 修复影片详情页顶部栏与通知栏重叠的问题：详情页 header 改用 `rememberSafePadding()` 计算顶部安全区，并把“Android 页面必须处理系统栏安全区”写入 agent 规则和 UI 样式规范。
 - 修复底部导航选中态标签文字发灰导致可视度下降的问题：`NavigationSuiteScaffold` 的每个 item 显式传入导航颜色，选中图标和文字使用 `onSurface`，未选中态保留 `onSurfaceVariant`。
 - 精简 Curated 首页 / My media 顶部栏：删除顶部服务器入口，保留设置入口；服务器管理继续通过设置页进入。
+- 新增 Android 影片搜索入口：Curated 首页 / My media 顶部栏在设置图标旁提供搜索图标，当前仅调用影片列表 API 的 `q` 参数搜索影片，并保留 `limit/offset` 自动分页。

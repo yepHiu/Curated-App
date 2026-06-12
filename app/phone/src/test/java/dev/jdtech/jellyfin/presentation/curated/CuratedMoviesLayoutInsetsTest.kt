@@ -21,7 +21,7 @@ class CuratedMoviesLayoutInsetsTest {
     }
 
     @Test
-    fun headerActionsOnlyKeepSettingsEntry() {
-        assertEquals(listOf("Settings"), curatedMoviesHeaderActionContentDescriptions())
+    fun headerActionsExposeSearchBeforeSettingsEntry() {
+        assertEquals(listOf("Search", "Settings"), curatedMoviesHeaderActionContentDescriptions())
     }
 }

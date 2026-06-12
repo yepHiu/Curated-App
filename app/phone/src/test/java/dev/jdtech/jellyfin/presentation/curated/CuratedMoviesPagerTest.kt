@@ -35,6 +35,29 @@ class CuratedMoviesPagerTest {
     }
 
     @Test
+    fun loadFirstPagePassesSearchQueryAndStoresVisibleQuery() = runBlocking {
+        val repository =
+            FakeCuratedRepository(
+                pages =
+                    listOf(
+                        MoviesPage(
+                            items = listOf(movieListItem("movie-1")),
+                            total = 1,
+                            limit = 2,
+                            offset = 0,
+                        )
+                    )
+            )
+
+        val state =
+            CuratedMoviesPager(repository, pageSize = 2, query = "ABC")
+                .loadFirstPage(searchQuery = " ABC ")
+
+        assertEquals(listOf(MovieRequest(limit = 2, offset = 0, query = "ABC")), repository.movieRequests)
+        assertEquals(" ABC ", state.searchQuery)
+    }
+
+    @Test
     fun loadNextPageRequestsOffsetFromLoadedMoviesAndAppendsItems() = runBlocking {
         val repository =
             FakeCuratedRepository(
@@ -67,6 +90,43 @@ class CuratedMoviesPagerTest {
     }
 
     @Test
+    fun loadNextPagePreservesSearchQuery() = runBlocking {
+        val repository =
+            FakeCuratedRepository(
+                pages =
+                    listOf(
+                        MoviesPage(
+                            items = listOf(movieListItem("movie-3"), movieListItem("movie-4")),
+                            total = 4,
+                            limit = 2,
+                            offset = 2,
+                        )
+                    )
+            )
+        val current =
+            CuratedMoviesState(
+                isLoading = false,
+                movies = listOf(movieListItem("movie-1"), movieListItem("movie-2")),
+                total = 4,
+                searchQuery = "ABC",
+            )
+
+        val state = CuratedMoviesPager(repository, pageSize = 2, query = "ABC").loadNextPage(current)
+
+        assertEquals(listOf(MovieRequest(limit = 2, offset = 2, query = "ABC")), repository.movieRequests)
+        assertEquals(listOf("movie-1", "movie-2", "movie-3", "movie-4"), state.movies.map { it.id })
+        assertEquals("ABC", state.searchQuery)
+        assertEquals(false, state.canLoadMore)
+    }
+
+    @Test
+    fun normalizedSearchQueryTrimsBlankQueries() {
+        assertEquals(null, curatedMoviesNormalizedSearchQuery(""))
+        assertEquals(null, curatedMoviesNormalizedSearchQuery("   "))
+        assertEquals("ABC", curatedMoviesNormalizedSearchQuery(" ABC "))
+    }
+
+    @Test
     fun loadNextPageDoesNotRequestWhenAllMoviesAreLoaded() = runBlocking {
         val repository = FakeCuratedRepository(pages = emptyList())
         val current =
@@ -94,7 +154,7 @@ class CuratedMoviesPagerTest {
             studio: String?,
             mode: String?,
         ): MoviesPage {
-            movieRequests += MovieRequest(limit = limit, offset = offset)
+            movieRequests += MovieRequest(limit = limit, offset = offset, query = query)
             return pages[movieRequests.lastIndex]
         }
 
@@ -106,7 +166,7 @@ class CuratedMoviesPagerTest {
         override suspend fun getPlaybackProgress(): List<PlaybackProgress> = error("Not used")
     }
 
-    private data class MovieRequest(val limit: Int, val offset: Int)
+    private data class MovieRequest(val limit: Int, val offset: Int, val query: String? = null)
 
     private fun movieListItem(id: String): MovieListItem =
         MovieListItem(
