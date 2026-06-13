@@ -108,4 +108,9 @@
     <string name="download_paused">已暂停</string>
     <string name="download_downloading">正在下载…</string>
     <string name="download_failed">下载失败</string>
+    <string name="movie_preview_images">预览图</string>
+    <string name="movie_preview_image_description">第 %1$d 张预览图</string>
+    <string name="movie_preview_close">关闭预览</string>
+    <string name="movie_preview_previous">上一张预览图</string>
+    <string name="movie_preview_next">下一张预览图</string>
 </resources>
