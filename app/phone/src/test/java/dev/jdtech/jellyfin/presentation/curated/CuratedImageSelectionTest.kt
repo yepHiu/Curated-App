@@ -59,6 +59,15 @@ class CuratedImageSelectionTest {
     }
 
     @Test
+    fun previewTargetPageClampsToAvailableImages() {
+        assertEquals(0, curatedPreviewTargetPage(currentIndex = 0, total = 3, delta = -1))
+        assertEquals(1, curatedPreviewTargetPage(currentIndex = 0, total = 3, delta = 1))
+        assertEquals(1, curatedPreviewTargetPage(currentIndex = 2, total = 3, delta = -1))
+        assertEquals(2, curatedPreviewTargetPage(currentIndex = 2, total = 3, delta = 1))
+        assertEquals(0, curatedPreviewTargetPage(currentIndex = 0, total = 0, delta = 1))
+    }
+
+    @Test
     fun previewPositionTextUsesOneBasedIndex() {
         assertEquals("1 / 3", curatedPreviewPositionText(index = 0, total = 3))
         assertEquals("3 / 3", curatedPreviewPositionText(index = 2, total = 3))

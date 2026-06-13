@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -35,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +59,7 @@ import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.core.R as CoreR
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.presentation.utils.rememberSafePadding
+import kotlinx.coroutines.launch
 
 @Composable
 fun CuratedMovieDetailScreen(
@@ -265,6 +269,9 @@ internal fun curatedPreviewCanGoPrevious(index: Int): Boolean = index > 0
 internal fun curatedPreviewCanGoNext(index: Int, total: Int): Boolean =
     total > 0 && index < total - 1
 
+internal fun curatedPreviewTargetPage(currentIndex: Int, total: Int, delta: Int): Int =
+    if (total <= 0) 0 else (currentIndex + delta).coerceIn(0, total - 1)
+
 internal fun curatedPreviewPositionText(index: Int, total: Int): String =
     if (total <= 0) "" else "${index + 1} / $total"
 
@@ -409,10 +416,13 @@ private fun CuratedPreviewImageDialog(
     if (previewImages.isEmpty()) return
 
     val safePadding = rememberSafePadding(handleStartInsets = false)
-    var currentIndex by
-        rememberSaveable(initialIndex, previewImages.size) {
-            mutableStateOf(initialIndex.coerceIn(0, previewImages.lastIndex))
-        }
+    val pagerState =
+        rememberPagerState(
+            initialPage = curatedPreviewTargetPage(initialIndex, previewImages.size, delta = 0),
+            pageCount = { previewImages.size },
+        )
+    val coroutineScope = rememberCoroutineScope()
+    val currentIndex = pagerState.currentPage.coerceIn(0, previewImages.lastIndex)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -429,13 +439,18 @@ private fun CuratedPreviewImageDialog(
                         bottom = safePadding.bottom + 16.dp,
                     )
         ) {
-            AsyncImage(
-                model = previewImages[currentIndex],
-                contentDescription = curatedPreviewPositionText(currentIndex, previewImages.size),
-                contentScale = ContentScale.Fit,
-                error = painterResource(CoreR.drawable.ic_film),
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier.fillMaxSize().padding(vertical = 56.dp),
-            )
+            ) { page ->
+                AsyncImage(
+                    model = previewImages[page],
+                    contentDescription = curatedPreviewPositionText(page, previewImages.size),
+                    contentScale = ContentScale.Fit,
+                    error = painterResource(CoreR.drawable.ic_film),
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -463,7 +478,15 @@ private fun CuratedPreviewImageDialog(
             ) {
                 FilledTonalIconButton(
                     enabled = curatedPreviewCanGoPrevious(currentIndex),
-                    onClick = { currentIndex -= 1 },
+                    onClick = {
+                        val targetPage =
+                            curatedPreviewTargetPage(
+                                currentIndex = currentIndex,
+                                total = previewImages.size,
+                                delta = -1,
+                            )
+                        coroutineScope.launch { pagerState.animateScrollToPage(targetPage) }
+                    },
                 ) {
                     Icon(
                         painter = painterResource(CoreR.drawable.ic_arrow_left),
@@ -472,7 +495,15 @@ private fun CuratedPreviewImageDialog(
                 }
                 FilledTonalIconButton(
                     enabled = curatedPreviewCanGoNext(currentIndex, previewImages.size),
-                    onClick = { currentIndex += 1 },
+                    onClick = {
+                        val targetPage =
+                            curatedPreviewTargetPage(
+                                currentIndex = currentIndex,
+                                total = previewImages.size,
+                                delta = 1,
+                            )
+                        coroutineScope.launch { pagerState.animateScrollToPage(targetPage) }
+                    },
                 ) {
                     Icon(
                         painter = painterResource(CoreR.drawable.ic_arrow_right),
