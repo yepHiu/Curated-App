@@ -114,6 +114,18 @@ class CuratedImageSelectionTest {
         assertEquals(listOf("Actor A", "Actor B"), curatedMovieDetailActors(movie))
     }
 
+    @Test
+    fun movieDetailActorLinksUseCommaSeparatedText() {
+        val movie =
+            movieDetail(
+                coverUrl = "wide-cover",
+                thumbUrl = "narrow-thumb",
+                actors = listOf("", " Actor A ", "Actor A", "Actor B"),
+            )
+
+        assertEquals("Actor A, Actor B", curatedMovieDetailActorsLinkText(curatedMovieDetailActors(movie)))
+    }
+
     private fun movieListItem(coverUrl: String?, thumbUrl: String?): MovieListItem =
         MovieListItem(
             id = "movie-1",

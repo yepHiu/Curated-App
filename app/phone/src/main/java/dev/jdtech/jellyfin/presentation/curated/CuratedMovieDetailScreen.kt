@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
@@ -48,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -263,6 +263,9 @@ internal fun curatedMoviePreviewImages(movie: MovieDetail): List<String> =
 
 internal fun curatedMovieDetailActors(movie: MovieDetail): List<String> =
     movie.actors.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+
+internal fun curatedMovieDetailActorsLinkText(actors: List<String>): String =
+    actors.joinToString(", ")
 
 internal fun curatedPreviewCanGoPrevious(index: Int): Boolean = index > 0
 
@@ -521,7 +524,7 @@ private fun CuratedActorsDetailLine(
     actors: List<String>,
     onActorClick: (String) -> Unit,
 ) {
-    if (actors.isEmpty()) return
+    if (curatedMovieDetailActorsLinkText(actors).isBlank()) return
 
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(
@@ -531,21 +534,29 @@ private fun CuratedActorsDetailLine(
             modifier = Modifier.width(96.dp),
         )
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.weight(1f),
         ) {
-            actors.forEach { actor ->
-                AssistChip(
-                    onClick = { onActorClick(actor) },
-                    label = {
+            actors.forEachIndexed { index, actor ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = actor,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { onActorClick(actor) },
+                    )
+                    if (index < actors.lastIndex) {
                         Text(
-                            text = actor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            text = ", ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    },
-                )
+                    }
+                }
             }
         }
     }
