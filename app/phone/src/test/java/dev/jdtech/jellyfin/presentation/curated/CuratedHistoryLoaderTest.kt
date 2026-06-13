@@ -95,6 +95,12 @@ class CuratedHistoryLoaderTest {
             error("Not used")
 
         override suspend fun getPlaybackProgress(): List<PlaybackProgress> = progress
+
+        override suspend fun updatePlaybackProgress(
+            movieId: String,
+            positionSec: Double,
+            durationSec: Double?,
+        ) = error("Not used")
     }
 
     private fun playbackProgress(movieId: String, updatedAt: String): PlaybackProgress =

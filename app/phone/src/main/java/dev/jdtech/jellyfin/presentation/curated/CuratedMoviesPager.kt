@@ -1,5 +1,6 @@
 package dev.jdtech.jellyfin.presentation.curated
 
+import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 import dev.jdtech.jellyfin.curated.repository.CuratedRepository
 
 internal class CuratedMoviesPager(
@@ -14,6 +15,7 @@ internal class CuratedMoviesPager(
             movies = page.items,
             total = page.total,
             searchQuery = searchQuery,
+            playbackProgressByMovieId = loadPlaybackProgressByMovieId(),
             endReached = page.items.isEmpty() || page.items.size >= page.total,
         )
     }
@@ -33,6 +35,9 @@ internal class CuratedMoviesPager(
             endReached = page.items.isEmpty() || movies.size >= page.total,
         )
     }
+
+    private suspend fun loadPlaybackProgressByMovieId(): Map<String, PlaybackProgress> =
+        runCatching { repository.getPlaybackProgress().associateBy { it.movieId } }.getOrDefault(emptyMap())
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 50

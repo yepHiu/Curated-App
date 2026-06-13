@@ -50,4 +50,17 @@ class CuratedRepositoryImpl(
 
     override suspend fun getPlaybackProgress(): List<PlaybackProgress> =
         withContext(dispatcher) { api.getPlaybackProgress().items.map { it.toDomain() } }
+
+    override suspend fun updatePlaybackProgress(
+        movieId: String,
+        positionSec: Double,
+        durationSec: Double?,
+    ) =
+        withContext(dispatcher) {
+            api.updatePlaybackProgress(
+                movieId = movieId,
+                positionSec = positionSec,
+                durationSec = durationSec,
+            )
+        }
 }

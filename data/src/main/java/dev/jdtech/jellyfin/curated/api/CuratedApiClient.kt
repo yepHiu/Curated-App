@@ -57,6 +57,20 @@ class CuratedApiClient(
 
     fun getPlaybackProgress(): PlaybackProgressListDto = get(path = "/playback/progress")
 
+    fun updatePlaybackProgress(movieId: String, positionSec: Double, durationSec: Double?) {
+        val url = apiUrlBuilder("/playback/progress").addPathSegment(movieId).build()
+        val requestBody =
+            json.encodeToString(
+                    PlaybackProgressUpdateRequestDto(
+                        positionSec = positionSec,
+                        durationSec = durationSec,
+                    )
+                )
+                .toRequestBody(jsonMediaType)
+        val request = Request.Builder().url(url).put(requestBody).build()
+        executeEmpty(request)
+    }
+
     private inline fun <reified T> get(path: String): T {
         val request = baseRequest(path).get().build()
         return execute(request)
@@ -91,6 +105,17 @@ class CuratedApiClient(
                 )
             }
             return json.decodeFromString(responseBody)
+        }
+    }
+
+    private fun executeEmpty(request: Request) {
+        client.newCall(request).execute().use { response ->
+            val responseBody = response.body.string()
+            if (!response.isSuccessful) {
+                throw CuratedApiException(
+                    CuratedErrorMapper.map(statusCode = response.code, body = responseBody)
+                )
+            }
         }
     }
 

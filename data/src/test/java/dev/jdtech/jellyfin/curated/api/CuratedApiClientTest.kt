@@ -323,4 +323,20 @@ class CuratedApiClientTest {
         assertEquals("2026-06-07T12:00:00Z", progress.items.first().updatedAt)
         assertEquals(null, progress.items.last().durationSec)
     }
+
+    @Test
+    fun updatePlaybackProgressPutsProgressBodyToEncodedMovieEndpoint() {
+        server.enqueue(MockResponse().setResponseCode(204))
+
+        api.updatePlaybackProgress(
+            movieId = "movie/1",
+            positionSec = 120.5,
+            durationSec = 7200.0,
+        )
+        val request = server.takeRequest()
+
+        assertEquals("/api/playback/progress/movie%2F1", request.requestUrl?.encodedPath)
+        assertEquals("PUT", request.method)
+        assertEquals("{\"positionSec\":120.5,\"durationSec\":7200.0}", request.body.readUtf8())
+    }
 }

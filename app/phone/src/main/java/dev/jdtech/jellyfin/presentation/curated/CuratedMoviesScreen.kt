@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,10 +50,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.core.R as CoreR
 import dev.jdtech.jellyfin.curated.api.MovieListItem
+import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 import dev.jdtech.jellyfin.presentation.utils.GridCellsAdaptiveWithMinColumns
 import dev.jdtech.jellyfin.presentation.utils.rememberSafePadding
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -63,6 +69,18 @@ fun CuratedMoviesScreen(
     viewModel: CuratedMoviesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    viewModel.refreshPlaybackProgress()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     CuratedMoviesLayout(
         state = state,
@@ -144,7 +162,11 @@ private fun CuratedMoviesLayout(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.movies, key = { it.id }) { movie ->
-                        CuratedMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
+                        CuratedMovieCard(
+                            movie = movie,
+                            progress = state.playbackProgressByMovieId[movie.id],
+                            onClick = { onMovieClick(movie.id) },
+                        )
                     }
                     if (state.isLoadingMore || state.appendErrorMessage != null) {
                         item(
@@ -254,7 +276,7 @@ private fun CuratedMoviesHeader(
 }
 
 @Composable
-private fun CuratedMovieCard(movie: MovieListItem, onClick: () -> Unit) {
+private fun CuratedMovieCard(movie: MovieListItem, progress: PlaybackProgress?, onClick: () -> Unit) {
     OutlinedCard(onClick = onClick) {
         val posterUrl = curatedMovieCardImageUrl(movie)
         if (posterUrl != null) {
@@ -278,6 +300,9 @@ private fun CuratedMovieCard(movie: MovieListItem, onClick: () -> Unit) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        curatedMovieCardProgressFraction(progress)?.let { progressFraction ->
+            CuratedMovieCardProgressBar(progress = progressFraction)
         }
 
         Column(modifier = Modifier.padding(10.dp)) {
@@ -304,8 +329,31 @@ private fun CuratedMovieCard(movie: MovieListItem, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun CuratedMovieCardProgressBar(progress: Float) {
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(3.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Box(
+            modifier =
+                Modifier.fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .background(MaterialTheme.colorScheme.primary)
+        )
+    }
+}
+
 internal fun curatedMovieCardImageUrl(movie: MovieListItem): String? =
     movie.thumbUrl ?: movie.coverUrl
+
+internal fun curatedMovieCardProgressFraction(progress: PlaybackProgress?): Float? {
+    val durationSec = progress?.durationSec?.takeIf { it > 0.0 } ?: return null
+    if (progress.positionSec <= 0.0) return null
+    return (progress.positionSec / durationSec).toFloat().coerceIn(0f, 1f)
+}
 
 internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
 

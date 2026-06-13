@@ -31,6 +31,18 @@ CuratedMoviesScreen
   -> absolute playback URL
   -> Media3 ExoPlayer + OkHttpDataSource(shared OkHttpClient)
   -> backend direct stream or HLS URL
+  -> periodic/pause/end PUT /api/playback/progress/{movieId}
+```
+
+观看历史列表的卡片不进入详情页，直接启动播放器：
+
+```text
+CuratedHistoryScreen
+  -> CuratedPlayerActivity Intent extras
+  -> CuratedPlayerViewModel
+  -> GET /api/library/movies/{movieId}/playback
+  -> resumePositionSec ?: startPositionSec
+  -> Media3 ExoPlayer
 ```
 
 关键入口：
@@ -68,7 +80,8 @@ app/phone/src/main/java/dev/jdtech/jellyfin/CuratedPlayerActivity.kt
 
 当前注意点：
 
-- `updatePlaybackProgress()` 目前在 ViewModel 中为空实现，因此 `onPause()` 虽有调用，但不会写回后端。
+- `updatePlaybackProgress()` 会读取当前播放器 position/duration，并通过 repository 写回 `PUT /api/playback/progress/{movieId}`。
+- progress 写回失败只记录日志，不阻塞 Activity 生命周期，也不打断播放。
 - Activity 保存了 `sessionId` 到 UI state，但退出时还没有调用 session delete。
 
 ### 3.2 `CuratedPlayerViewModel`
@@ -106,9 +119,22 @@ player.prepare()
 player.play()
 ```
 
+- `descriptor.curatedStartPositionMs()` 使用：
+
+```kotlin
+resumePositionSec ?: startPositionSec ?: 0.0
+```
+
+因此后端返回历史播放位置时会优先续播。
+
 - 根据播放状态更新 UI：
   - `STATE_READY` -> `fileLoaded = true`
-  - `STATE_ENDED` -> 发送 `NavigateBack`
+  - `STATE_READY` 且正在播放 -> 启动约 10 秒一次的 progress 写回循环
+  - `STATE_ENDED` -> 停止写回循环、写入最后进度、发送 `NavigateBack`
+- 根据播放状态同步 progress：
+  - `onIsPlayingChanged(true)` -> 启动周期性 progress 写回
+  - `onIsPlayingChanged(false)` -> 停止周期性写回并立即写一次 progress
+  - `updatePlaybackProgress()` -> 外部生命周期钩子可主动触发一次 progress 写回
 - 释放时 remove listener 并 release player。
 
 ## 4. 网络与 Cookie 会话
@@ -206,10 +232,12 @@ AppPreferences.currentServer
 data/src/main/java/dev/jdtech/jellyfin/curated/api/CuratedApiClient.kt
 ```
 
-当前播放相关 API client 只实现了：
+当前播放相关 API client 已实现：
 
 ```text
 GET /api/library/movies/{movieId}/playback
+GET /api/playback/progress
+PUT /api/playback/progress/{movieId}
 ```
 
 实现细节：
@@ -217,6 +245,9 @@ GET /api/library/movies/{movieId}/playback
 - 内部路径为 `/library/movies/{movieId}/playback`。
 - `movieId` 使用 `HttpUrl.Builder.addPathSegment(movieId)`，会进行路径参数编码。
 - 返回 `PlaybackDescriptorDto`。
+- `GET /playback/progress` 返回 `PlaybackProgressListDto`，repository 映射为 `List<PlaybackProgress>`。
+- `PUT /playback/progress/{movieId}` 请求体为 `PlaybackProgressUpdateRequestDto(positionSec, durationSec)`，成功响应按空 body 处理。
+- progress 写回的 `movieId` 同样使用 `addPathSegment(movieId)` 编码，避免斜杠等特殊字符破坏路径。
 
 ### 5.3 URL 规范化
 
@@ -284,74 +315,65 @@ GET /api/library/movies/{movieId}/playback
 
 当前 Android 端没有对 `mode` 做显式业务分支，而是把 `descriptor.url` 交给 ExoPlayer，由 Media3 根据 URL 和 MIME 播放 direct 或 HLS。
 
-## 7. 当前未完成的播放闭环
+## 7. 当前播放闭环状态
 
-当前已经完成“能通过 descriptor 起播”的 MVP 主链路，但完整播放闭环尚未实现。
+当前已经完成“能通过 descriptor 起播”的 MVP 主链路，并已补上基础历史进度闭环。
 
-待实现项：
+已实现项：
 
 1. 进度回写
    - API：`PUT /api/playback/progress/{movieId}`
-   - 当前状态：`CuratedPlayerViewModel.updatePlaybackProgress()` 是空实现。
+   - 当前状态：播放中约每 10 秒写回一次；暂停、停止播放和播放结束时立即写回一次。
+   - 失败策略：写回失败只通过 `Timber.w` 记录，不阻塞播放和页面退出。
 
-2. HLS session 清理
+2. 续播
+   - 数据来源：`GET /api/library/movies/{movieId}/playback` 返回的 `resumePositionSec`。
+   - 当前状态：起播位置使用 `resumePositionSec ?: startPositionSec ?: 0.0`。
+
+3. 观看历史列表与影片卡进度
+   - API：`GET /api/playback/progress`
+   - 当前状态：`History` tab 使用 progress 列表作为观看历史；`My media` 影片卡片使用同一 progress 列表在缩略图和标题之间展示小横条。
+
+待实现项：
+
+1. HLS session 清理
    - API：`DELETE /api/playback/sessions/{sessionId}`
    - 当前状态：descriptor 的 `sessionId` 保存进 UI state，但退出播放器时未调用 delete。
 
-3. 已播放标记
+2. 已播放标记
    - API：`POST /api/library/played-movies/{movieId}`
    - 当前状态：未实现播放阈值判断和写回。
 
-4. 观看时长统计
+3. 观看时长统计
    - API：`POST /api/playback/watch-time/daily`
    - 当前状态：未实现有效观看时长累计和提交。
 
-5. direct 到 HLS 的显式 fallback
+4. direct 到 HLS 的显式 fallback
    - API：`POST /api/library/movies/{movieId}/playback-session`
    - 当前状态：direct 播放失败后没有创建 HLS session 的 fallback。
 
-6. playback API client 扩展
-   - 当前 `CuratedApiClient` 只暴露 `getPlaybackDescriptor()`。
-   - 尚未暴露 playback session、progress、watch time、played movies、session delete 等方法。
+5. playback API client 扩展
+   - 当前 `CuratedApiClient` 已暴露 descriptor、progress 读取和 progress 写回。
+   - 尚未暴露 playback session delete、watch time、played movies 和显式 fallback 所需方法。
 
-## 8. 当前源码与旧文档差异
+## 8. 续播规则
 
-`doc/2026-06-08-curated-droid-mvp-progress.md` 中记录：
-
-```text
-resumePositionSec ?: startPositionSec 会转换为毫秒作为起播位置
-```
-
-但当前源码不是这样。
-
-当前 `CuratedPlayerContract.curatedStartPositionMs()` 只读取：
+`CuratedPlayerContract.curatedStartPositionMs()` 当前读取：
 
 ```kotlin
-val startSeconds = startPositionSec ?: 0.0
+val startSeconds = resumePositionSec ?: startPositionSec ?: 0.0
 ```
 
-也就是说：
+规则：
 
-- `startPositionSec` 存在时，从该位置起播。
-- `startPositionSec` 缺失时，从 0 起播。
-- `resumePositionSec` 当前被忽略。
+- `resumePositionSec` 存在时，优先从历史播放位置起播。
+- `resumePositionSec` 缺失时，使用 descriptor 的 `startPositionSec`。
+- 两者都缺失时，从 0 起播。
 
-测试 `CuratedPlayerContractTest.playbackDescriptorIgnoresResumePositionWhenStartPositionIsMissing()` 也明确覆盖了这个行为。
+测试覆盖：
 
-后续如果要实现续播，应先确认业务规则：
-
-- 使用 `resumePositionSec ?: startPositionSec`
-- 还是继续只认 `startPositionSec`
-- 或由 UI 提供“继续播放 / 从头播放”两种入口
-
-确认后应同步更新：
-
-- `CuratedPlayerContract.kt`
-- `CuratedPlayerContractTest.kt`
-- `doc/2026-06-08-curated-droid-mvp-progress.md` 或新进度文档
-- 本文档
-- `doc/AGENT_MEMORY.md`
-
+- `CuratedPlayerContractTest.playbackDescriptorResumePositionTakesPriorityOverStartPosition()`
+- `CuratedPlayerContractTest.playbackDescriptorUsesResumePositionWhenStartPositionIsMissing()`
 ## 9. 旧播放链路残留
 
 旧播放链路仍在仓库中：
@@ -396,12 +418,10 @@ PlayerActivity
 
 推荐下一步实现顺序：
 
-1. 为 Curated API client / repository 增加 playback progress、session delete、played movies、watch time 方法。
-2. 在 `CuratedPlayerViewModel` 中记录当前 movieId、duration、position、sessionId。
-3. 在 pause、退出、后台切换时写入一次 progress。
-4. 增加周期性 progress 写回。
-5. 播放结束或达到阈值时写 played movies。
-6. 每约 60 秒累计 watch time，并限制单次提交 `watchedSec <= 300`。
-7. 对 HLS descriptor 在退出时调用 session delete。
-8. 处理 direct 失败到 HLS session 的显式 fallback。
+1. 为 Curated API client / repository 增加 session delete、played movies、watch time 和 fallback 所需方法。
+2. 在 `CuratedPlayerViewModel` 中补全 `sessionId` 生命周期管理。
+3. 播放结束或达到阈值时写 played movies。
+4. 每约 60 秒累计 watch time，并限制单次提交 `watchedSec <= 300`。
+5. 对 HLS descriptor 在退出时调用 session delete。
+6. 处理 direct 失败到 HLS session 的显式 fallback。
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.jdtech.jellyfin.curated.api.MovieListItem
+import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 import dev.jdtech.jellyfin.curated.repository.CuratedRepositoryFactory
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -100,6 +101,21 @@ constructor(private val repositoryFactory: CuratedRepositoryFactory) : ViewModel
             }
     }
 
+    fun refreshPlaybackProgress() {
+        viewModelScope.launch {
+            runCatching {
+                    repositoryFactory
+                        .createForCurrentServer()
+                        .getPlaybackProgress()
+                        .associateBy { it.movieId }
+                }
+                .onSuccess { progressByMovieId ->
+                    _state.value =
+                        _state.value.copy(playbackProgressByMovieId = progressByMovieId)
+                }
+        }
+    }
+
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L
     }
@@ -111,6 +127,7 @@ data class CuratedMoviesState(
     val movies: List<MovieListItem> = emptyList(),
     val total: Int = 0,
     val searchQuery: String = "",
+    val playbackProgressByMovieId: Map<String, PlaybackProgress> = emptyMap(),
     val errorMessage: String? = null,
     val appendErrorMessage: String? = null,
     val endReached: Boolean = false,

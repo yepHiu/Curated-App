@@ -18,14 +18,18 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.jdtech.jellyfin.curated.repository.CuratedRepositoryFactory
+import dev.jdtech.jellyfin.curatedPlaybackProgressUpdate
 import dev.jdtech.jellyfin.curatedStartPositionMs
 import dev.jdtech.jellyfin.settings.domain.AppPreferences
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import timber.log.Timber
@@ -43,6 +47,8 @@ constructor(
 
     private val trackSelector = DefaultTrackSelector(context)
     private var initializedMovieId: String? = null
+    private var currentMovieId: String? = null
+    private var progressSyncJob: Job? = null
 
     var playWhenReady = true
     var playbackSpeed = 1f
@@ -94,6 +100,7 @@ constructor(
     fun initialize(movieId: String, title: String?) {
         if (initializedMovieId == movieId) return
         initializedMovieId = movieId
+        currentMovieId = movieId
 
         viewModelScope.launch {
             _uiState.value =
@@ -134,7 +141,7 @@ constructor(
     }
 
     fun updatePlaybackProgress() {
-        // Progress sync will be wired to /api/playback/progress/{movieId} in the next step.
+        viewModelScope.launch { syncPlaybackProgress() }
     }
 
     fun selectSpeed(speed: Float) {
@@ -166,19 +173,74 @@ constructor(
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         when (playbackState) {
-            Player.STATE_READY -> _uiState.update { it.copy(fileLoaded = true) }
-            Player.STATE_ENDED -> eventsChannel.trySend(CuratedPlayerEvent.NavigateBack)
+            Player.STATE_READY -> {
+                _uiState.update { it.copy(fileLoaded = true) }
+                if (player.isPlaying) {
+                    startProgressSyncLoop()
+                }
+            }
+            Player.STATE_ENDED -> {
+                stopProgressSyncLoop()
+                updatePlaybackProgress()
+                eventsChannel.trySend(CuratedPlayerEvent.NavigateBack)
+            }
         }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) {
+            startProgressSyncLoop()
+        } else {
+            stopProgressSyncLoop()
+            updatePlaybackProgress()
+        }
         eventsChannel.trySend(CuratedPlayerEvent.IsPlayingChanged(isPlaying))
     }
 
     override fun onCleared() {
-        super.onCleared()
+        stopProgressSyncLoop()
         player.removeListener(this)
         player.release()
+        super.onCleared()
+    }
+
+    private fun startProgressSyncLoop() {
+        if (progressSyncJob?.isActive == true) return
+        progressSyncJob =
+            viewModelScope.launch {
+                while (isActive) {
+                    delay(PROGRESS_SYNC_INTERVAL_MS)
+                    syncPlaybackProgress()
+                }
+            }
+    }
+
+    private fun stopProgressSyncLoop() {
+        progressSyncJob?.cancel()
+        progressSyncJob = null
+    }
+
+    private suspend fun syncPlaybackProgress() {
+        val update =
+            curatedPlaybackProgressUpdate(
+                movieId = currentMovieId,
+                positionMs = player.currentPosition,
+                durationMs = player.duration,
+            ) ?: return
+        runCatching {
+                repositoryFactory
+                    .createForCurrentServer()
+                    .updatePlaybackProgress(
+                        movieId = update.movieId,
+                        positionSec = update.positionSec,
+                        durationSec = update.durationSec,
+                    )
+            }
+            .onFailure { Timber.w(it, "Unable to update curated playback progress") }
+    }
+
+    private companion object {
+        const val PROGRESS_SYNC_INTERVAL_MS = 10_000L
     }
 }
 

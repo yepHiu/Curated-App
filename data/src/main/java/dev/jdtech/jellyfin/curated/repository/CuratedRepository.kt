@@ -20,4 +20,10 @@ interface CuratedRepository {
     suspend fun getPlaybackDescriptor(movieId: String): PlaybackDescriptor
 
     suspend fun getPlaybackProgress(): List<PlaybackProgress>
+
+    suspend fun updatePlaybackProgress(
+        movieId: String,
+        positionSec: Double,
+        durationSec: Double?,
+    )
 }

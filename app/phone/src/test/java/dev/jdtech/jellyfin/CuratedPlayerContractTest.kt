@@ -23,7 +23,7 @@ class CuratedPlayerContractTest {
     }
 
     @Test
-    fun playbackDescriptorStartPositionUsesMilliseconds() {
+    fun playbackDescriptorResumePositionTakesPriorityOverStartPosition() {
         val descriptor =
             PlaybackDescriptor(
                 movieId = "movie-1",
@@ -46,11 +46,11 @@ class CuratedPlayerContractTest {
                 sourceAudioCodec = null,
             )
 
-        assertEquals(12_000L, descriptor.curatedStartPositionMs())
+        assertEquals(42_500L, descriptor.curatedStartPositionMs())
     }
 
     @Test
-    fun playbackDescriptorIgnoresResumePositionWhenStartPositionIsMissing() {
+    fun playbackDescriptorUsesResumePositionWhenStartPositionIsMissing() {
         val descriptor =
             PlaybackDescriptor(
                 movieId = "movie-1",
@@ -73,6 +73,37 @@ class CuratedPlayerContractTest {
                 sourceAudioCodec = null,
             )
 
-        assertEquals(0L, descriptor.curatedStartPositionMs())
+        assertEquals(7_175_600L, descriptor.curatedStartPositionMs())
+    }
+
+    @Test
+    fun playbackProgressUpdateConvertsPositivePositionAndDurationToSeconds() {
+        val update =
+            curatedPlaybackProgressUpdate(
+                movieId = "movie-1",
+                positionMs = 90_500L,
+                durationMs = 7_200_000L,
+            )
+
+        assertEquals("movie-1", update?.movieId)
+        assertEquals(90.5, update?.positionSec ?: -1.0, 0.0)
+        assertEquals(7200.0, update?.durationSec ?: -1.0, 0.0)
+    }
+
+    @Test
+    fun playbackProgressUpdateSkipsInvalidMovieOrPositionAndAllowsUnknownDuration() {
+        assertEquals(null, curatedPlaybackProgressUpdate(movieId = "", positionMs = 90_500L, durationMs = 7_200_000L))
+        assertEquals(null, curatedPlaybackProgressUpdate(movieId = "movie-1", positionMs = 0L, durationMs = 7_200_000L))
+
+        val update =
+            curatedPlaybackProgressUpdate(
+                movieId = "movie-1",
+                positionMs = 90_500L,
+                durationMs = -1L,
+            )
+
+        assertEquals("movie-1", update?.movieId)
+        assertEquals(90.5, update?.positionSec ?: -1.0, 0.0)
+        assertEquals(null, update?.durationSec)
     }
 }

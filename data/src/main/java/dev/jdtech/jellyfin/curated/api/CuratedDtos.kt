@@ -122,3 +122,9 @@ data class PlaybackProgressDto(
     val durationSec: Double? = null,
     val updatedAt: String,
 )
+
+@Serializable
+data class PlaybackProgressUpdateRequestDto(
+    val positionSec: Double,
+    val durationSec: Double? = null,
+)

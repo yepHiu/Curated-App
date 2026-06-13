@@ -187,4 +187,20 @@ class CuratedRepositoryTest {
         assertEquals(7200.0, progress.first().durationSec ?: -1.0, 0.0)
         assertEquals("2026-06-07T12:00:00Z", progress.first().updatedAt)
     }
+
+    @Test
+    fun updatePlaybackProgressPutsProgressBodyToBackend() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(204))
+
+        repository.updatePlaybackProgress(
+            movieId = "movie/1",
+            positionSec = 98.25,
+            durationSec = 5400.0,
+        )
+        val request = server.takeRequest()
+
+        assertEquals("/api/playback/progress/movie%2F1", request.requestUrl?.encodedPath)
+        assertEquals("PUT", request.method)
+        assertEquals("{\"positionSec\":98.25,\"durationSec\":5400.0}", request.body.readUtf8())
+    }
 }
