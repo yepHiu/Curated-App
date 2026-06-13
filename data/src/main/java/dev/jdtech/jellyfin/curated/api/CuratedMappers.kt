@@ -30,6 +30,15 @@ fun MoviesPageDto.toDomain(baseUrl: String): MoviesPage =
         offset = offset,
     )
 
+fun HomepageDailyRecommendationsDto.toDomain(): HomepageDailyRecommendations =
+    HomepageDailyRecommendations(
+        dateUtc = dateUtc,
+        generatedAt = generatedAt,
+        generationVersion = generationVersion,
+        heroMovieIds = heroMovieIds,
+        recommendationMovieIds = recommendationMovieIds,
+    )
+
 fun ActorListItemDto.toDomain(baseUrl: String): ActorListItem =
     ActorListItem(
         name = name,

@@ -50,7 +50,6 @@ import dev.jdtech.jellyfin.R
 import dev.jdtech.jellyfin.core.R as CoreR
 import dev.jdtech.jellyfin.presentation.theme.FindroidTheme
 import dev.jdtech.jellyfin.presentation.theme.spacings
-import dev.jdtech.jellyfin.settings.R as SettingsR
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +75,7 @@ fun AboutScreen(navigateBack: () -> Unit) {
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(SettingsR.string.about)) },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = navigateBack) {
                         Icon(

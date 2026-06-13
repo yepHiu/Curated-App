@@ -1,5 +1,6 @@
 package dev.jdtech.jellyfin.curated.repository
 
+import dev.jdtech.jellyfin.curated.api.HomepageDailyRecommendations
 import dev.jdtech.jellyfin.curated.api.ActorProfile
 import dev.jdtech.jellyfin.curated.api.ActorsPage
 import dev.jdtech.jellyfin.curated.api.MovieDetail
@@ -8,6 +9,8 @@ import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
 import dev.jdtech.jellyfin.curated.api.PlaybackProgress
 
 interface CuratedRepository {
+    suspend fun getHomepageRecommendations(): HomepageDailyRecommendations
+
     suspend fun getMovies(
         limit: Int = 50,
         offset: Int = 0,

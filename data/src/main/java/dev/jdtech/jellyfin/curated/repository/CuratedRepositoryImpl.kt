@@ -1,9 +1,10 @@
 package dev.jdtech.jellyfin.curated.repository
 
 import dev.jdtech.jellyfin.curated.api.CuratedApiClient
+import dev.jdtech.jellyfin.curated.api.CuratedUrlResolver
 import dev.jdtech.jellyfin.curated.api.ActorProfile
 import dev.jdtech.jellyfin.curated.api.ActorsPage
-import dev.jdtech.jellyfin.curated.api.CuratedUrlResolver
+import dev.jdtech.jellyfin.curated.api.HomepageDailyRecommendations
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
@@ -23,6 +24,9 @@ class CuratedRepositoryImpl(
 ) : CuratedRepository {
     private val normalizedBaseUrl = CuratedUrlResolver.normalizeBaseUrl(baseUrl)
     private val api = CuratedApiClient(normalizedBaseUrl, client, json)
+
+    override suspend fun getHomepageRecommendations(): HomepageDailyRecommendations =
+        withContext(dispatcher) { api.getHomepageRecommendations().toDomain() }
 
     override suspend fun getMovies(
         limit: Int,

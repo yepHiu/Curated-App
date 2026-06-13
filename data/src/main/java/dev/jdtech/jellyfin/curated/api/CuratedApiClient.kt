@@ -25,6 +25,9 @@ class CuratedApiClient(
     fun unlock(pin: String, trustedForever: Boolean): AuthStatusDto =
         post(path = "/auth/unlock", body = UnlockRequestDto(pin, trustedForever))
 
+    fun getHomepageRecommendations(): HomepageDailyRecommendationsDto =
+        get(path = "/homepage/recommendations")
+
     fun getMovies(
         limit: Int = 50,
         offset: Int = 0,
@@ -111,6 +114,13 @@ class CuratedApiClient(
         val requestBody = json.encodeToString(body).toRequestBody(jsonMediaType)
         val request = baseRequest(path).post(requestBody).build()
         return execute(request)
+    }
+
+    @Suppress("unused")
+    private inline fun <reified Body> put(path: String, body: Body) {
+        val requestBody = json.encodeToString(body).toRequestBody(jsonMediaType)
+        val request = baseRequest(path).put(requestBody).build()
+        executeEmpty(request)
     }
 
     private fun baseRequest(path: String): Request.Builder =

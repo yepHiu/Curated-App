@@ -5,6 +5,7 @@ import dev.jdtech.jellyfin.core.presentation.dummy.dummyMovie
 import dev.jdtech.jellyfin.core.presentation.dummy.dummySeason
 import dev.jdtech.jellyfin.core.presentation.dummy.dummyShow
 import dev.jdtech.jellyfin.core.presentation.theme.ColorDark
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -43,15 +44,105 @@ class NavigationRootTest {
         val offlineRoutes = curatedNavigationItems(isOfflineMode = true).map { it.route::class }
 
         assertEquals(
-            listOf(HomeRoute::class, MediaRoute::class, ActorsRoute::class, HistoryRoute::class),
+            listOf(
+                HomeRoute::class,
+                MediaRoute::class,
+                ActorsRoute::class,
+                HistoryRoute::class,
+                SettingsRoute::class,
+            ),
             onlineRoutes,
         )
         assertEquals(
-            listOf(HomeRoute::class, MediaRoute::class, ActorsRoute::class, HistoryRoute::class),
+            listOf(
+                HomeRoute::class,
+                MediaRoute::class,
+                ActorsRoute::class,
+                HistoryRoute::class,
+                SettingsRoute::class,
+            ),
             offlineRoutes,
         )
         assertFalse(onlineRoutes.contains(DownloadsRoute::class))
         assertFalse(offlineRoutes.contains(DownloadsRoute::class))
+    }
+
+    @Test
+    fun curatedNavigationItemsIncludeSettingsForSidebar() {
+        val routes = curatedNavigationItems(isOfflineMode = false).map { it.route::class }
+
+        assertEquals(
+            listOf(
+                HomeRoute::class,
+                MediaRoute::class,
+                ActorsRoute::class,
+                HistoryRoute::class,
+                SettingsRoute::class,
+            ),
+            routes,
+        )
+    }
+
+    @Test
+    fun curatedNavigationLayoutUsesModalDrawerOnCompactWidth() {
+        assertEquals(
+            CuratedNavigationLayout.ModalDrawer,
+            curatedNavigationLayoutType(isExpandedWidth = false),
+        )
+    }
+
+    @Test
+    fun curatedNavigationLayoutUsesPermanentDrawerOnExpandedWidth() {
+        assertEquals(
+            CuratedNavigationLayout.PermanentDrawer,
+            curatedNavigationLayoutType(isExpandedWidth = true),
+        )
+    }
+
+    @Test
+    fun curatedNavigationSelectionMapsDetailRoutesToParentItems() {
+        assertEquals(
+            MediaRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute(MovieRoute("movie-1")::class.qualifiedName),
+        )
+        assertEquals(
+            ActorsRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute(ActorRoute("Actor A")::class.qualifiedName),
+        )
+        assertEquals(
+            SettingsRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute(AboutRoute::class.qualifiedName),
+        )
+    }
+
+    @Test
+    fun curatedNavigationDrawerOnlyEnablesForAppRoutes() {
+        val navigationItems = curatedNavigationItems(isOfflineMode = false)
+
+        assertTrue(
+            curatedNavigationDrawerEnabled(
+                selectedRoute = HomeRoute::class.qualifiedName,
+                navigationItems = navigationItems,
+            )
+        )
+        assertTrue(
+            curatedNavigationDrawerEnabled(
+                selectedRoute = MediaRoute::class.qualifiedName,
+                navigationItems = navigationItems,
+            )
+        )
+        assertFalse(
+            curatedNavigationDrawerEnabled(
+                selectedRoute = WelcomeRoute::class.qualifiedName,
+                navigationItems = navigationItems,
+            )
+        )
+    }
+
+    @Test
+    fun curatedNavigationDrawerUsesCompactWidths() {
+        assertEquals(256.dp, curatedNavigationDrawerWidth(CuratedNavigationLayout.ModalDrawer))
+        assertEquals(224.dp, curatedNavigationDrawerWidth(CuratedNavigationLayout.PermanentDrawer))
     }
 
     @Test

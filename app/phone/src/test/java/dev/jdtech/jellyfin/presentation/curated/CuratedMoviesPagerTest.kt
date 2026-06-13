@@ -2,6 +2,7 @@ package dev.jdtech.jellyfin.presentation.curated
 
 import dev.jdtech.jellyfin.curated.api.ActorProfile
 import dev.jdtech.jellyfin.curated.api.ActorsPage
+import dev.jdtech.jellyfin.curated.api.HomepageDailyRecommendations
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MovieListItem
 import dev.jdtech.jellyfin.curated.api.MoviesPage
@@ -198,6 +199,9 @@ class CuratedMoviesPagerTest {
         private val progress: List<PlaybackProgress> = emptyList(),
     ) : CuratedRepository {
         val movieRequests = mutableListOf<MovieRequest>()
+
+        override suspend fun getHomepageRecommendations(): HomepageDailyRecommendations =
+            error("Not used")
 
         override suspend fun getMovies(
             limit: Int,

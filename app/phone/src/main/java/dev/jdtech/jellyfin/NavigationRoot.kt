@@ -3,32 +3,36 @@ package dev.jdtech.jellyfin
 import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItemColors
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
@@ -63,6 +67,7 @@ import dev.jdtech.jellyfin.presentation.film.ShowScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedActorDetailScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedActorsScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedHistoryScreen
+import dev.jdtech.jellyfin.presentation.curated.CuratedHomeScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMovieDetailScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMoviesScreen
 import dev.jdtech.jellyfin.presentation.settings.AboutScreen
@@ -76,6 +81,7 @@ import dev.jdtech.jellyfin.presentation.setup.users.UsersScreen
 import dev.jdtech.jellyfin.presentation.setup.welcome.WelcomeScreen
 import dev.jdtech.jellyfin.presentation.utils.LocalOfflineMode
 import java.util.UUID
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable data object WelcomeRoute
@@ -156,6 +162,12 @@ val historyTab =
         icon = CoreR.drawable.ic_history,
         route = HistoryRoute,
     )
+val settingsTab =
+    TabBarItem(
+        title = CoreR.string.title_settings,
+        icon = CoreR.drawable.ic_settings,
+        route = SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings)),
+    )
 val downloadsTab =
     TabBarItem(
         title = CoreR.string.title_download,
@@ -182,70 +194,44 @@ fun NavigationRoot(
             isCuratedAuthLocked = isCuratedAuthLocked,
         )
 
-    val navigationItems = curatedNavigationItems(isOfflineMode)
-    val navigationItemClassNames = navigationItems.map { it.route::class.qualifiedName }
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-
-    var searchExpanded by remember { mutableStateOf(false) }
-
     val currentRoute = navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute in navigationItemClassNames && !searchExpanded
+    val selectedNavigationRoute = curatedNavigationSelectedRoute(currentRoute)
 
-    val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
-
-    LaunchedEffect(showBottomBar) {
-        if (showBottomBar) {
-            navigationSuiteScaffoldState.show()
+    val windowAdaptiveInfo = currentWindowAdaptiveInfo()
+    val navigationLayout =
+        curatedNavigationLayoutType(
+            isExpandedWidth =
+                windowAdaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
+                    WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND
+                )
+        )
+    val navigationItems = curatedNavigationItems(isOfflineMode)
+    val navigationDrawerEnabled =
+        curatedNavigationDrawerEnabled(
+            selectedRoute = selectedNavigationRoute,
+            navigationItems = navigationItems,
+        )
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    val onOpenNavigation: (() -> Unit)? =
+        if (navigationLayout == CuratedNavigationLayout.ModalDrawer && navigationDrawerEnabled) {
+            { coroutineScope.launch { drawerState.open() } }
         } else {
-            navigationSuiteScaffoldState.hide()
+            null
+        }
+    val onNavigationItemClick: (TabBarItem) -> Unit = { item ->
+        navController.safeNavigate(item.route) {
+            popUpTo(navController.graph.startDestinationId) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+        if (navigationLayout == CuratedNavigationLayout.ModalDrawer) {
+            coroutineScope.launch { drawerState.close() }
         }
     }
 
-    val windowAdaptiveInfo = currentWindowAdaptiveInfo()
-    val customNavSuiteType =
-        with(windowAdaptiveInfo) {
-            if (
-                windowSizeClass.isWidthAtLeastBreakpoint(
-                    WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND
-                )
-            ) {
-                NavigationSuiteType.NavigationRail
-            } else {
-                NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(this)
-            }
-        }
-    val navigationItemColors = curatedNavigationItemColors()
-
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            navigationItems.forEach { item ->
-                item(
-                    selected = currentRoute == item.route::class.qualifiedName,
-                    onClick = {
-                        searchExpanded = false
-
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(item.icon),
-                            contentDescription = stringResource(item.title),
-                        )
-                    },
-                    enabled = item.enabled,
-                    label = { Text(text = stringResource(item.title)) },
-                    colors = navigationItemColors,
-                )
-            }
-        },
-        layoutType = customNavSuiteType,
-        state = navigationSuiteScaffoldState,
-    ) {
+    val navigationContent: @Composable () -> Unit = {
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -329,27 +315,29 @@ fun NavigationRoot(
                 )
             }
             composable<HomeRoute> {
-                CuratedMoviesScreen(
+                CuratedHomeScreen(
+                    onOpenNavigation = onOpenNavigation,
                     onMovieClick = { movieId -> navController.safeNavigate(MovieRoute(movieId)) },
-                    onSettingsClick = {
-                        navController.safeNavigate(
-                            SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings))
+                    onPlayMovie = { movieId, title ->
+                        context.startActivity(
+                            Intent(context, CuratedPlayerActivity::class.java).apply {
+                                putExtra(CuratedPlayerContract.EXTRA_MOVIE_ID, movieId)
+                                putExtra(CuratedPlayerContract.EXTRA_TITLE, title)
+                            }
                         )
                     },
+                    onOpenMediaClick = { navController.safeNavigate(MediaRoute) },
                 )
             }
             composable<MediaRoute> {
                 CuratedMoviesScreen(
+                    onOpenNavigation = onOpenNavigation,
                     onMovieClick = { movieId -> navController.safeNavigate(MovieRoute(movieId)) },
-                    onSettingsClick = {
-                        navController.safeNavigate(
-                            SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings))
-                        )
-                    },
                 )
             }
             composable<ActorsRoute> {
                 CuratedActorsScreen(
+                    onOpenNavigation = onOpenNavigation,
                     onActorClick = { actorName -> navController.safeNavigate(ActorRoute(actorName)) }
                 )
             }
@@ -363,6 +351,7 @@ fun NavigationRoot(
             }
             composable<HistoryRoute> {
                 CuratedHistoryScreen(
+                    onOpenNavigation = onOpenNavigation,
                     onPlayMovie = { movieId, title ->
                         val extras = curatedHistoryPlayerExtras(movieId = movieId, title = title)
                         context.startActivity(
@@ -423,7 +412,6 @@ fun NavigationRoot(
                 CuratedMovieDetailScreen(
                     movieId = curatedMovieIdForRoute(route),
                     navigateBack = { navController.safePopBackStack() },
-                    navigateHome = { navigateHome(navController) },
                     onPlayMovie = { movieId, title ->
                         context.startActivity(
                             Intent(context, CuratedPlayerActivity::class.java).apply {
@@ -512,6 +500,53 @@ fun NavigationRoot(
             }
         }
     }
+
+    when (navigationLayout) {
+        CuratedNavigationLayout.ModalDrawer -> {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                gesturesEnabled = navigationDrawerEnabled,
+                drawerContent = {
+                    ModalDrawerSheet(
+                        modifier =
+                            Modifier.width(
+                                curatedNavigationDrawerWidth(CuratedNavigationLayout.ModalDrawer)
+                            )
+                    ) {
+                        CuratedNavigationDrawerContent(
+                            navigationItems = navigationItems,
+                            selectedRoute = selectedNavigationRoute,
+                            onNavigationItemClick = onNavigationItemClick,
+                        )
+                    }
+                },
+            ) {
+                navigationContent()
+            }
+        }
+        CuratedNavigationLayout.PermanentDrawer -> {
+            PermanentNavigationDrawer(
+                drawerContent = {
+                    PermanentDrawerSheet(
+                        modifier =
+                            Modifier.width(
+                                curatedNavigationDrawerWidth(
+                                    CuratedNavigationLayout.PermanentDrawer
+                                )
+                            )
+                    ) {
+                        CuratedNavigationDrawerContent(
+                            navigationItems = navigationItems,
+                            selectedRoute = selectedNavigationRoute,
+                            onNavigationItemClick = onNavigationItemClick,
+                        )
+                    }
+                }
+            ) {
+                navigationContent()
+            }
+        }
+    }
 }
 
 data class CuratedNavigationItemColorSpec(
@@ -536,7 +571,50 @@ internal fun curatedNavigationItemColorSpec(
     )
 
 @Composable
-private fun curatedNavigationItemColors(): NavigationSuiteItemColors {
+private fun CuratedNavigationDrawerContent(
+    navigationItems: List<TabBarItem>,
+    selectedRoute: String?,
+    onNavigationItemClick: (TabBarItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val itemColors = curatedNavigationDrawerItemColors()
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+        navigationItems.forEach { item ->
+            NavigationDrawerItem(
+                selected = selectedRoute == item.route::class.qualifiedName,
+                onClick = { onNavigationItemClick(item) },
+                icon = {
+                    Icon(
+                        painter = painterResource(item.icon),
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(text = stringResource(item.title)) },
+                colors = itemColors,
+            )
+        }
+    }
+}
+
+@Composable
+private fun curatedNavigationDrawerItemColors() =
+    navigationItemColors().let { colors ->
+        NavigationDrawerItemDefaults.colors(
+            selectedIconColor = colors.selectedIconColor,
+            selectedTextColor = colors.selectedTextColor,
+            selectedContainerColor = colors.selectedIndicatorColor,
+            unselectedIconColor = colors.unselectedIconColor,
+            unselectedTextColor = colors.unselectedTextColor,
+        )
+    }
+
+@Composable
+private fun navigationItemColors(): CuratedNavigationItemColorSpec {
     val colors =
         curatedNavigationItemColorSpec(
             selectedContentColor = MaterialTheme.colorScheme.onSurface,
@@ -544,32 +622,7 @@ private fun curatedNavigationItemColors(): NavigationSuiteItemColors {
             selectedIndicatorColor = MaterialTheme.colorScheme.primaryContainer,
         )
 
-    return NavigationSuiteDefaults.itemColors(
-        navigationBarItemColors =
-            NavigationBarItemDefaults.colors(
-                selectedIconColor = colors.selectedIconColor,
-                selectedTextColor = colors.selectedTextColor,
-                indicatorColor = colors.selectedIndicatorColor,
-                unselectedIconColor = colors.unselectedIconColor,
-                unselectedTextColor = colors.unselectedTextColor,
-            ),
-        navigationRailItemColors =
-            NavigationRailItemDefaults.colors(
-                selectedIconColor = colors.selectedIconColor,
-                selectedTextColor = colors.selectedTextColor,
-                indicatorColor = colors.selectedIndicatorColor,
-                unselectedIconColor = colors.unselectedIconColor,
-                unselectedTextColor = colors.unselectedTextColor,
-            ),
-        navigationDrawerItemColors =
-            NavigationDrawerItemDefaults.colors(
-                selectedIconColor = colors.selectedIconColor,
-                selectedTextColor = colors.selectedTextColor,
-                selectedContainerColor = colors.selectedIndicatorColor,
-                unselectedIconColor = colors.unselectedIconColor,
-                unselectedTextColor = colors.unselectedTextColor,
-            ),
-    )
+    return colors
 }
 
 internal fun curatedStartDestination(
@@ -586,7 +639,47 @@ internal fun curatedStartDestination(
     }
 
 internal fun curatedNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
-    listOf(homeTab, mediaTab, actorsTab, historyTab)
+    listOf(homeTab, mediaTab, actorsTab, historyTab, settingsTab)
+
+enum class CuratedNavigationLayout {
+    ModalDrawer,
+    PermanentDrawer,
+}
+
+internal fun curatedNavigationDrawerWidth(layout: CuratedNavigationLayout) =
+    when (layout) {
+        CuratedNavigationLayout.ModalDrawer -> 256.dp
+        CuratedNavigationLayout.PermanentDrawer -> 224.dp
+    }
+
+internal fun curatedNavigationLayoutType(isExpandedWidth: Boolean): CuratedNavigationLayout =
+    if (isExpandedWidth) {
+        CuratedNavigationLayout.PermanentDrawer
+    } else {
+        CuratedNavigationLayout.ModalDrawer
+    }
+
+internal fun curatedNavigationSelectedRoute(currentRoute: String?): String? =
+    when (currentRoute) {
+        MovieRoute::class.qualifiedName,
+        LibraryRoute::class.qualifiedName,
+        CollectionRoute::class.qualifiedName,
+        FavoritesRoute::class.qualifiedName,
+        DownloadsRoute::class.qualifiedName,
+        ShowRoute::class.qualifiedName,
+        EpisodeRoute::class.qualifiedName,
+        SeasonRoute::class.qualifiedName,
+        PersonRoute::class.qualifiedName -> MediaRoute::class.qualifiedName
+        ActorRoute::class.qualifiedName -> ActorsRoute::class.qualifiedName
+        SettingsRoute::class.qualifiedName,
+        AboutRoute::class.qualifiedName -> SettingsRoute::class.qualifiedName
+        else -> currentRoute
+    }
+
+internal fun curatedNavigationDrawerEnabled(
+    selectedRoute: String?,
+    navigationItems: List<TabBarItem>,
+): Boolean = selectedRoute in navigationItems.map { it.route::class.qualifiedName }
 
 internal fun isCuratedVisibleItem(item: FindroidItem): Boolean =
     when (item) {

@@ -43,11 +43,13 @@
 - 当前 Curated 播放闭环尚未实现 HLS session delete、played movies、watch time 统计和 direct 到 HLS 的显式 fallback。
 - Android 观看历史入口位于底部导航 `History` tab，使用 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
 - Android My media 电影卡片会加载 `GET /api/playback/progress` 并在缩略图和标题之间展示历史播放进度小横条；没有有效 duration 或 position 为 0 时不展示。
-- Android 首页和 My media 共用 `CuratedMoviesScreen` / `CuratedMoviesViewModel`，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
-- Android 首页和 My media 顶部栏包含搜索入口和设置入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
+- Android `HomeRoute` 使用独立 `CuratedHomeScreen` / `CuratedHomeViewModel`，通过 `GET /api/homepage/recommendations` 读取当天推荐快照，再按 `heroMovieIds` 和 `recommendationMovieIds` 调用 `GET /api/library/movies/{movieId}` 补全影片详情并渲染 Hero 和今日推荐；单个影片详情失败时跳过该卡片。
+- Android `MediaRoute` 使用 `CuratedMoviesScreen` / `CuratedMoviesViewModel` 作为完整电影库，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
+- Android My media 顶部栏包含搜索入口和设置入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
+- Android 影片详情页使用 `MovieDetail.previewImages` 展示横向预览图缩略图，点击缩略图打开全屏图片查看器并支持上一张 / 下一张切换；不要在 Android 端循环请求 `/api/library/movies/{movieId}/asset/preview/{index}` 探测数量。
 - 当前源码中的 `curatedStartPositionMs()` 使用 `resumePositionSec ?: startPositionSec ?: 0.0`，因此影片会优先从后端返回的历史播放位置续播。
 - Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
-- Curated 首页 / My media 顶部栏只保留设置入口，不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
+- Curated 首页顶部栏保留设置入口，My media 顶部栏保留搜索和设置入口，二者都不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
 - Android UI 视觉方向是默认深色、内容优先、低干扰媒体库界面、粉色品牌主色。
 - Android Compose 页面顶部栏、返回按钮、标题、筛选栏和首屏主要内容必须主动处理 `WindowInsets.safeDrawing` 或项目 `rememberSafePadding()`，避免与通知栏、挖孔屏或显示裁切区域重叠；不要只写固定顶部间距。
@@ -120,7 +122,7 @@ Agent 必须主动维护以下文档：
 - 明确后续 API、UI、主题、项目规则和长期约定变更时，agent 必须同步维护规则文档和项目记忆。
 - 新增 `doc/2026-06-13-curated-droid-playback-architecture.md`，记录当前 Curated 播放主链路、共享 Cookie 会话、旧播放器残留、未完成播放闭环和续播点源码差异。
 - 播放器方向策略从强制 `sensorLandscape` 调整为 `sensor` / `SCREEN_ORIENTATION_SENSOR`，避免竖屏进入播放页时被强制横屏；锁定控制层仍保持当前方向。
-- 新增 Android 观看历史功能：底部导航增加 `History`，客户端读取 `GET /api/playback/progress`，逐条补全电影详情并展示观看进度；历史卡片点击直接播放；本次不实现 progress 写回。
+- 新增 Android 观看历史功能：底部导航增加 `History`，客户端读取 `GET /api/playback/progress`，逐条补全电影详情并展示观看进度；历史卡片点击直接播放；当时未包含进度写回，后续已由本日播放进度回写变更补上。
 - 精简 Android 设置页：移除偏好音频语言、偏好字幕语言、界面分类和进度条预览图 / trickplay 设置入口，同时保留“显示额外信息”开关并提升到设置根页。
 - 新增 Git 提交规则：代码修改完成并验证后主动尝试提交；提交保持原子化；提交信息使用 `add:`、`fix:`、`enh:`、`docs:`、`test:`、`refactor:` 等成熟前缀。
 - 精简 Android 播放页：移除播放控制条里的音频轨道和字幕轨道设置按钮，并清理两个播放器 Activity 中对应的弹窗绑定。
@@ -129,8 +131,10 @@ Agent 必须主动维护以下文档：
 - 修复 Android 首页和 My media 电影列表只显示首个 50 条结果的问题：列表状态记录总数和下一页加载状态，滚动接近底部时继续用 `limit/offset` 拉取并追加后续影片。
 - 修复影片详情页顶部栏与通知栏重叠的问题：详情页 header 改用 `rememberSafePadding()` 计算顶部安全区，并把“Android 页面必须处理系统栏安全区”写入 agent 规则和 UI 样式规范。
 - 修复底部导航选中态标签文字发灰导致可视度下降的问题：`NavigationSuiteScaffold` 的每个 item 显式传入导航颜色，选中图标和文字使用 `onSurface`，未选中态保留 `onSurfaceVariant`。
-- 精简 Curated 首页 / My media 顶部栏：删除顶部服务器入口，保留设置入口；服务器管理继续通过设置页进入。
-- 新增 Android 影片搜索入口：Curated 首页 / My media 顶部栏在设置图标旁提供搜索图标，当前仅调用影片列表 API 的 `q` 参数搜索影片，并保留 `limit/offset` 自动分页。
+- 精简 Curated 首页 / My media 顶部栏：删除顶部服务器入口，首页保留设置入口，My media 保留搜索和设置入口；服务器管理继续通过设置页进入。
+- 新增 Android 影片搜索入口：Curated My media 顶部栏在设置图标旁提供搜索图标，当前仅调用影片列表 API 的 `q` 参数搜索影片，并保留 `limit/offset` 自动分页。
+- 新增 Android 真正首页：`HomeRoute` 不再复用电影库页，而是展示后端首页推荐快照生成的 Hero 卡片和今日推荐；`MediaRoute` 继续作为完整电影库入口。
 - 新增 Curated 播放进度回写和续播：Android 播放器周期性与暂停/结束时写入 `PUT /api/playback/progress/{movieId}`，起播优先使用 `resumePositionSec`，My media 影片卡片展示历史播放进度小横条。
-- ?? Android ???????Curated ?????? `Home`?`My media`?`Actors`?`History`?`ActorsRoute` ?? `GET /api/library/actors?limit=50&offset=N&q=<query>&sort=movieCount` ????????????/???????
-- ?? Android ??????`ActorRoute(name)` ?? `GET /api/library/actors/profile?name=<actorName>` ????????????????? `GET /api/library/movies?actor=<actorName>&limit=50&offset=N` ??????????????? `MovieRoute(movieId)` ????
+- 新增 Android 演员展示功能：Curated 底部导航显示 `Home`、`My media`、`Actors`、`History`，`ActorsRoute` 使用 `GET /api/library/actors?limit=50&offset=N&q=<query>&sort=movieCount` 分页列出演员并支持演员名/用户标签搜索。
+- 新增 Android 演员详情页：`ActorRoute(name)` 调用 `GET /api/library/actors/profile?name=<actorName>` 展示演员资料，参演影片列表使用现有 `GET /api/library/movies?actor=<actorName>&limit=50&offset=N` 分页加载，影片卡片点击进入现有 `MovieRoute(movieId)` 详情页。
+- 新增 Android 影片详情页预览图：详情页在标题 / 播放按钮后展示 `MovieDetail.previewImages` 横向缩略图，点击后打开全屏图片查看器，支持关闭、上一张 / 下一张和 `1 / N` 位置提示。

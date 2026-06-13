@@ -44,7 +44,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -64,8 +63,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun CuratedMoviesScreen(
+    onOpenNavigation: (() -> Unit)? = null,
     onMovieClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
     viewModel: CuratedMoviesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -88,7 +87,7 @@ fun CuratedMoviesScreen(
         onRetryClick = viewModel::loadMovies,
         onLoadMore = viewModel::loadNextPage,
         onSearchQueryChange = viewModel::onSearchQueryChange,
-        onSettingsClick = onSettingsClick,
+        onOpenNavigation = onOpenNavigation,
     )
 }
 
@@ -99,7 +98,7 @@ private fun CuratedMoviesLayout(
     onRetryClick: () -> Unit,
     onLoadMore: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
-    onSettingsClick: () -> Unit,
+    onOpenNavigation: (() -> Unit)?,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
@@ -127,7 +126,7 @@ private fun CuratedMoviesLayout(
         CuratedMoviesHeader(
             state = state,
             onSearchQueryChange = onSearchQueryChange,
-            onSettingsClick = onSettingsClick,
+            onOpenNavigation = onOpenNavigation,
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(
@@ -190,7 +189,7 @@ private fun CuratedMoviesLayout(
 private fun CuratedMoviesHeader(
     state: CuratedMoviesState,
     onSearchQueryChange: (String) -> Unit,
-    onSettingsClick: () -> Unit,
+    onOpenNavigation: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -246,31 +245,14 @@ private fun CuratedMoviesHeader(
                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
             )
         } else {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Curated",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = curatedMoviesHeaderSubtitle(total = state.total),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
+            Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { searchActive = true }) {
                 Icon(
                     painter = painterResource(CoreR.drawable.ic_search),
                     contentDescription = actionContentDescriptions[0],
                 )
             }
-        }
-
-        IconButton(onClick = onSettingsClick) {
-            Icon(
-                painter = painterResource(CoreR.drawable.ic_settings),
-                contentDescription = actionContentDescriptions[1],
-            )
         }
     }
 }
@@ -360,7 +342,7 @@ internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawing
 internal fun curatedMoviesHeaderSubtitle(total: Int): String = "Movie library"
 
 internal fun curatedMoviesHeaderActionContentDescriptions(): List<String> =
-    listOf("Search", "Settings")
+    listOf("Search")
 
 internal fun curatedMoviesSearchPlaceholder(): String = "Search movies"
 

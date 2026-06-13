@@ -420,6 +420,36 @@ class CuratedApiClientTest {
     }
 
     @Test
+    fun getHomepageRecommendationsRequestsRecommendationsEndpointAndParsesSnapshot() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "dateUtc": "2026-06-13",
+                      "generatedAt": "2026-06-13T00:00:00Z",
+                      "generationVersion": "v1",
+                      "heroMovieIds": ["hero-1", "hero-2"],
+                      "recommendationMovieIds": ["movie-1", "movie-2"]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val recommendations = api.getHomepageRecommendations()
+        val request = server.takeRequest()
+
+        assertEquals("/api/homepage/recommendations", request.path)
+        assertEquals("2026-06-13", recommendations.dateUtc)
+        assertEquals("2026-06-13T00:00:00Z", recommendations.generatedAt)
+        assertEquals("v1", recommendations.generationVersion)
+        assertEquals(listOf("hero-1", "hero-2"), recommendations.heroMovieIds)
+        assertEquals(listOf("movie-1", "movie-2"), recommendations.recommendationMovieIds)
+    }
+
+    @Test
     fun updatePlaybackProgressPutsProgressBodyToEncodedMovieEndpoint() {
         server.enqueue(MockResponse().setResponseCode(204))
 
@@ -432,6 +462,6 @@ class CuratedApiClientTest {
 
         assertEquals("/api/playback/progress/movie%2F1", request.requestUrl?.encodedPath)
         assertEquals("PUT", request.method)
-        assertEquals("{\"positionSec\":120.5,\"durationSec\":7200.0}", request.body.readUtf8())
+        assertEquals("""{"positionSec":120.5,"durationSec":7200.0}""", request.body.readUtf8())
     }
 }

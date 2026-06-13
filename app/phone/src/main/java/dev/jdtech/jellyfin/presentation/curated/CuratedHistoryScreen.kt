@@ -33,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -46,6 +45,7 @@ import dev.jdtech.jellyfin.presentation.utils.rememberSafePadding
 
 @Composable
 fun CuratedHistoryScreen(
+    onOpenNavigation: (() -> Unit)? = null,
     onPlayMovie: (String, String) -> Unit,
     viewModel: CuratedHistoryViewModel = hiltViewModel(),
 ) {
@@ -53,6 +53,7 @@ fun CuratedHistoryScreen(
 
     CuratedHistoryLayout(
         state = state,
+        onOpenNavigation = onOpenNavigation,
         onPlayMovie = onPlayMovie,
         onRetryClick = viewModel::loadHistory,
     )
@@ -61,27 +62,20 @@ fun CuratedHistoryScreen(
 @Composable
 private fun CuratedHistoryLayout(
     state: CuratedHistoryState,
+    onOpenNavigation: (() -> Unit)?,
     onPlayMovie: (String, String) -> Unit,
     onRetryClick: () -> Unit,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(start = 16.dp, top = safePadding.top + 8.dp, end = 16.dp, bottom = 8.dp)
         ) {
-            Text(
-                text = stringResource(CoreR.string.title_history),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(curatedHistoryHeaderSubtitleResId(itemCount = state.items.size)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
         }
 
         when {

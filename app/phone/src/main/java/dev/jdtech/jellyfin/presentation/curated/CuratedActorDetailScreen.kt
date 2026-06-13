@@ -59,7 +59,6 @@ fun CuratedActorDetailScreen(
     LaunchedEffect(actorName) { viewModel.loadActor(actorName) }
 
     CuratedActorDetailLayout(
-        actorName = actorName,
         state = state,
         navigateBack = navigateBack,
         onMovieClick = onMovieClick,
@@ -70,7 +69,6 @@ fun CuratedActorDetailScreen(
 
 @Composable
 private fun CuratedActorDetailLayout(
-    actorName: String,
     state: CuratedActorDetailState,
     navigateBack: () -> Unit,
     onMovieClick: (String) -> Unit,
@@ -97,13 +95,6 @@ private fun CuratedActorDetailLayout(
                     contentDescription = "Back",
                 )
             }
-            Text(
-                text = state.profile?.name ?: actorName,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
         }
 
         when {

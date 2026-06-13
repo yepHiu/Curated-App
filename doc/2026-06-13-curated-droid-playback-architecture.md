@@ -17,7 +17,7 @@
 当前 Curated 主播放链路如下：
 
 ```text
-CuratedMoviesScreen
+CuratedHomeScreen / CuratedMoviesScreen
   -> MovieRoute(movieId: String)
   -> CuratedMovieDetailScreen
   -> Play button
@@ -48,9 +48,11 @@ CuratedHistoryScreen
 关键入口：
 
 - `app/phone/src/main/java/dev/jdtech/jellyfin/NavigationRoot.kt`
-  - `HomeRoute` 和 `MediaRoute` 进入 `CuratedMoviesScreen`。
+  - `HomeRoute` 进入 `CuratedHomeScreen`。
+  - `MediaRoute` 进入 `CuratedMoviesScreen`。
+  - `HistoryRoute` 进入 `CuratedHistoryScreen`。
   - `MovieRoute` 渲染 `CuratedMovieDetailScreen`。
-  - `onPlayMovie` 启动 `CuratedPlayerActivity`。
+  - `onPlayMovie` 和历史卡片点击都会启动 `CuratedPlayerActivity`。
 - `app/phone/src/main/java/dev/jdtech/jellyfin/CuratedPlayerContract.kt`
   - Intent extras：
     - `curatedMovieId`

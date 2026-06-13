@@ -3,6 +3,7 @@ package dev.jdtech.jellyfin.presentation.curated
 import dev.jdtech.jellyfin.curated.api.ActorListItem
 import dev.jdtech.jellyfin.curated.api.ActorProfile
 import dev.jdtech.jellyfin.curated.api.ActorsPage
+import dev.jdtech.jellyfin.curated.api.HomepageDailyRecommendations
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
@@ -128,6 +129,9 @@ class CuratedActorsPagerTest {
 
     private class FakeCuratedRepository(private val pages: List<ActorsPage>) : CuratedRepository {
         val actorRequests = mutableListOf<ActorRequest>()
+
+        override suspend fun getHomepageRecommendations(): HomepageDailyRecommendations =
+            error("Not used")
 
         override suspend fun getMovies(
             limit: Int,

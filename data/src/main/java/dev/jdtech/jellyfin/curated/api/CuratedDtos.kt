@@ -39,6 +39,15 @@ data class MoviesPageDto(
 )
 
 @Serializable
+data class HomepageDailyRecommendationsDto(
+    val dateUtc: String,
+    val generatedAt: String,
+    val generationVersion: String,
+    val heroMovieIds: List<String> = emptyList(),
+    val recommendationMovieIds: List<String> = emptyList(),
+)
+
+@Serializable
 data class ActorsListDto(
     val total: Int,
     val actors: List<ActorListItemDto> = emptyList(),

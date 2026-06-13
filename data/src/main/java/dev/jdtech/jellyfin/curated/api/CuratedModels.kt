@@ -28,6 +28,14 @@ data class MoviesPage(
     val offset: Int,
 )
 
+data class HomepageDailyRecommendations(
+    val dateUtc: String,
+    val generatedAt: String,
+    val generationVersion: String,
+    val heroMovieIds: List<String>,
+    val recommendationMovieIds: List<String>,
+)
+
 data class ActorsPage(
     val actors: List<ActorListItem>,
     val total: Int,

@@ -65,7 +65,6 @@ import kotlinx.coroutines.launch
 fun CuratedMovieDetailScreen(
     movieId: String,
     navigateBack: () -> Unit,
-    navigateHome: () -> Unit,
     onPlayMovie: (movieId: String, title: String) -> Unit,
     onActorClick: (String) -> Unit,
     viewModel: CuratedMovieDetailViewModel = hiltViewModel(),
@@ -77,7 +76,6 @@ fun CuratedMovieDetailScreen(
     CuratedMovieDetailLayout(
         state = state,
         navigateBack = navigateBack,
-        navigateHome = navigateHome,
         onPlayMovie = onPlayMovie,
         onActorClick = onActorClick,
     )
@@ -87,7 +85,6 @@ fun CuratedMovieDetailScreen(
 private fun CuratedMovieDetailLayout(
     state: CuratedMovieDetailState,
     navigateBack: () -> Unit,
-    navigateHome: () -> Unit,
     onPlayMovie: (movieId: String, title: String) -> Unit,
     onActorClick: (String) -> Unit,
 ) {
@@ -110,16 +107,6 @@ private fun CuratedMovieDetailLayout(
                     painter = painterResource(CoreR.drawable.ic_arrow_left),
                     contentDescription = "Back",
                 )
-            }
-            Text(
-                text = state.movie?.title ?: "Movie",
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = navigateHome) {
-                Icon(painter = painterResource(CoreR.drawable.ic_home), contentDescription = "Home")
             }
         }
 

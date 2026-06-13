@@ -45,7 +45,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +59,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun CuratedActorsScreen(
+    onOpenNavigation: (() -> Unit)? = null,
     onActorClick: (String) -> Unit,
     viewModel: CuratedActorsViewModel = hiltViewModel(),
 ) {
@@ -71,6 +71,7 @@ fun CuratedActorsScreen(
         onRetryClick = viewModel::loadActors,
         onLoadMore = viewModel::loadNextPage,
         onSearchQueryChange = viewModel::onSearchQueryChange,
+        onOpenNavigation = onOpenNavigation,
     )
 }
 
@@ -81,6 +82,7 @@ private fun CuratedActorsLayout(
     onRetryClick: () -> Unit,
     onLoadMore: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
+    onOpenNavigation: (() -> Unit)?,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
@@ -107,6 +109,7 @@ private fun CuratedActorsLayout(
         CuratedActorsHeader(
             state = state,
             onSearchQueryChange = onSearchQueryChange,
+            onOpenNavigation = onOpenNavigation,
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(
@@ -168,6 +171,7 @@ private fun CuratedActorsLayout(
 private fun CuratedActorsHeader(
     state: CuratedActorsState,
     onSearchQueryChange: (String) -> Unit,
+    onOpenNavigation: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -222,18 +226,8 @@ private fun CuratedActorsHeader(
                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
             )
         } else {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(CoreR.string.title_actors),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Actor library",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
+            Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { searchActive = true }) {
                 Icon(
                     painter = painterResource(CoreR.drawable.ic_search),
