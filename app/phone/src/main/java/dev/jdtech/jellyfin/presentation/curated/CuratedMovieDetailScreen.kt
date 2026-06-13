@@ -259,6 +259,16 @@ internal fun curatedPreviewCanGoNext(index: Int, total: Int): Boolean =
 internal fun curatedPreviewPositionText(index: Int, total: Int): String =
     if (total <= 0) "" else "${index + 1} / $total"
 
+internal fun curatedPreviewThumbnailAspectRatio(width: Int, height: Int): Float {
+    if (width <= 0 || height <= 0) return CuratedPreviewThumbnailDefaultAspectRatio
+
+    return (width.toFloat() / height.toFloat())
+        .coerceIn(
+            minimumValue = CuratedPreviewThumbnailMinAspectRatio,
+            maximumValue = CuratedPreviewThumbnailMaxAspectRatio,
+        )
+}
+
 @Composable
 private fun CuratedMoviePreviewImagesSection(
     previewImages: List<String>,
@@ -295,11 +305,15 @@ private fun CuratedMoviePreviewThumbnail(
     index: Int,
     onClick: () -> Unit,
 ) {
+    val thumbnailHeight = 96.dp
+    var thumbnailAspectRatio by
+        rememberSaveable(imageUrl) { mutableStateOf(CuratedPreviewThumbnailDefaultAspectRatio) }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier =
-            Modifier.width(148.dp)
-                .aspectRatio(16 / 9f)
+            Modifier.width(thumbnailHeight * thumbnailAspectRatio)
+                .height(thumbnailHeight)
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .clickable(onClick = onClick),
@@ -311,8 +325,15 @@ private fun CuratedMoviePreviewThumbnail(
                     CoreR.string.movie_preview_image_description,
                     index + 1,
                 ),
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             error = painterResource(CoreR.drawable.ic_film),
+            onSuccess = { state ->
+                thumbnailAspectRatio =
+                    curatedPreviewThumbnailAspectRatio(
+                        width = state.result.image.width,
+                        height = state.result.image.height,
+                    )
+            },
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -426,3 +447,7 @@ private fun curatedMovieMeta(movie: MovieDetail): String =
         .filterNotNull()
         .filter { it.isNotBlank() }
         .joinToString(" · ")
+
+private val CuratedPreviewThumbnailDefaultAspectRatio = 16f / 9f
+private val CuratedPreviewThumbnailMinAspectRatio = 9f / 16f
+private val CuratedPreviewThumbnailMaxAspectRatio = 21f / 9f

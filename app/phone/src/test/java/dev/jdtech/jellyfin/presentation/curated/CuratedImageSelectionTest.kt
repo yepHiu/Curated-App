@@ -65,6 +65,21 @@ class CuratedImageSelectionTest {
         assertEquals("", curatedPreviewPositionText(index = 0, total = 0))
     }
 
+    @Test
+    fun previewThumbnailAspectRatioUsesImageDimensions() {
+        assertEquals(1f, curatedPreviewThumbnailAspectRatio(width = 1200, height = 1200), 0.0001f)
+        assertEquals(2f / 3f, curatedPreviewThumbnailAspectRatio(width = 800, height = 1200), 0.0001f)
+        assertEquals(21f / 9f, curatedPreviewThumbnailAspectRatio(width = 2100, height = 900), 0.0001f)
+    }
+
+    @Test
+    fun previewThumbnailAspectRatioFallsBackAndClampsExtremes() {
+        assertEquals(16f / 9f, curatedPreviewThumbnailAspectRatio(width = 0, height = 900), 0.0001f)
+        assertEquals(16f / 9f, curatedPreviewThumbnailAspectRatio(width = 1600, height = 0), 0.0001f)
+        assertEquals(9f / 16f, curatedPreviewThumbnailAspectRatio(width = 100, height = 1000), 0.0001f)
+        assertEquals(21f / 9f, curatedPreviewThumbnailAspectRatio(width = 4000, height = 500), 0.0001f)
+    }
+
     private fun movieListItem(coverUrl: String?, thumbUrl: String?): MovieListItem =
         MovieListItem(
             id = "movie-1",
