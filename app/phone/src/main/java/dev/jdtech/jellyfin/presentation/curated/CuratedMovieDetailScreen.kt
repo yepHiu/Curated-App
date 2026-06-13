@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
@@ -60,6 +63,7 @@ fun CuratedMovieDetailScreen(
     navigateBack: () -> Unit,
     navigateHome: () -> Unit,
     onPlayMovie: (movieId: String, title: String) -> Unit,
+    onActorClick: (String) -> Unit,
     viewModel: CuratedMovieDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -71,6 +75,7 @@ fun CuratedMovieDetailScreen(
         navigateBack = navigateBack,
         navigateHome = navigateHome,
         onPlayMovie = onPlayMovie,
+        onActorClick = onActorClick,
     )
 }
 
@@ -80,6 +85,7 @@ private fun CuratedMovieDetailLayout(
     navigateBack: () -> Unit,
     navigateHome: () -> Unit,
     onPlayMovie: (movieId: String, title: String) -> Unit,
+    onActorClick: (String) -> Unit,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
 
@@ -125,7 +131,11 @@ private fun CuratedMovieDetailLayout(
                 }
             }
             state.movie != null -> {
-                CuratedMovieDetailContent(movie = state.movie, onPlayMovie = onPlayMovie)
+                CuratedMovieDetailContent(
+                    movie = state.movie,
+                    onPlayMovie = onPlayMovie,
+                    onActorClick = onActorClick,
+                )
             }
         }
     }
@@ -135,8 +145,10 @@ private fun CuratedMovieDetailLayout(
 private fun CuratedMovieDetailContent(
     movie: MovieDetail,
     onPlayMovie: (movieId: String, title: String) -> Unit,
+    onActorClick: (String) -> Unit,
 ) {
     val previewImages = curatedMoviePreviewImages(movie)
+    val actors = curatedMovieDetailActors(movie)
     var selectedPreviewIndex by rememberSaveable(movie.id) { mutableStateOf<Int?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -214,7 +226,7 @@ private fun CuratedMovieDetailContent(
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     CuratedDetailLine(label = "Studio", value = movie.studio)
-                    CuratedDetailLine(label = "Actors", value = movie.actors.joinToString(", "))
+                    CuratedActorsDetailLine(actors = actors, onActorClick = onActorClick)
                     CuratedDetailLine(label = "Tags", value = movie.tags.joinToString(", "))
                     CuratedDetailLine(label = "Resolution", value = movie.resolution)
                     CuratedDetailLine(
@@ -244,6 +256,9 @@ internal fun curatedMovieDetailHeaderTopPadding(safeDrawingTop: Dp): Dp =
 
 internal fun curatedMoviePreviewImages(movie: MovieDetail): List<String> =
     movie.previewImages.filter { it.isNotBlank() }.distinct()
+
+internal fun curatedMovieDetailActors(movie: MovieDetail): List<String> =
+    movie.actors.map { it.trim() }.filter { it.isNotBlank() }.distinct()
 
 internal fun curatedPreviewCanGoPrevious(index: Int): Boolean = index > 0
 
@@ -464,6 +479,42 @@ private fun CuratedPreviewImageDialog(
                         contentDescription = stringResource(CoreR.string.movie_preview_next),
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun CuratedActorsDetailLine(
+    actors: List<String>,
+    onActorClick: (String) -> Unit,
+) {
+    if (actors.isEmpty()) return
+
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(
+            text = "Actors",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(96.dp),
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f),
+        ) {
+            actors.forEach { actor ->
+                AssistChip(
+                    onClick = { onActorClick(actor) },
+                    label = {
+                        Text(
+                            text = actor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                )
             }
         }
     }

@@ -432,6 +432,7 @@ fun NavigationRoot(
                             }
                         )
                     },
+                    onActorClick = { actorName -> navController.safeNavigate(ActorRoute(actorName)) },
                 )
             }
             composable<ShowRoute> { backStackEntry ->

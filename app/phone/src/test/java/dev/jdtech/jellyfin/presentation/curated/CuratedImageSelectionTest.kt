@@ -93,6 +93,18 @@ class CuratedImageSelectionTest {
         assertEquals(Int.MAX_VALUE, curatedMovieSummaryMaxLines(isExpanded = true))
     }
 
+    @Test
+    fun movieDetailActorsDropsBlankNamesTrimsAndDeduplicates() {
+        val movie =
+            movieDetail(
+                coverUrl = "wide-cover",
+                thumbUrl = "narrow-thumb",
+                actors = listOf("", " Actor A ", "Actor A", "Actor B", " "),
+            )
+
+        assertEquals(listOf("Actor A", "Actor B"), curatedMovieDetailActors(movie))
+    }
+
     private fun movieListItem(coverUrl: String?, thumbUrl: String?): MovieListItem =
         MovieListItem(
             id = "movie-1",
@@ -119,13 +131,14 @@ class CuratedImageSelectionTest {
         coverUrl: String?,
         thumbUrl: String?,
         previewImages: List<String> = emptyList(),
+        actors: List<String> = emptyList(),
     ): MovieDetail =
         MovieDetail(
             id = "movie-1",
             title = "Example",
             code = "ABC-001",
             studio = "Studio",
-            actors = emptyList(),
+            actors = actors,
             tags = emptyList(),
             userTags = emptyList(),
             runtimeMinutes = 120,
