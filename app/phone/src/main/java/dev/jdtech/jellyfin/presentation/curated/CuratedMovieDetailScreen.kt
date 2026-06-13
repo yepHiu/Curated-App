@@ -26,10 +26,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -205,15 +207,7 @@ private fun CuratedMovieDetailContent(
 
             if (movie.summary.isNotBlank()) {
                 item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = "Summary",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = movie.summary, style = MaterialTheme.typography.bodyMedium)
-                    }
+                    CuratedMovieSummarySection(summary = movie.summary)
                 }
             }
 
@@ -267,6 +261,58 @@ internal fun curatedPreviewThumbnailAspectRatio(width: Int, height: Int): Float 
             minimumValue = CuratedPreviewThumbnailMinAspectRatio,
             maximumValue = CuratedPreviewThumbnailMaxAspectRatio,
         )
+}
+
+internal fun curatedMovieSummaryCanToggle(
+    lineCount: Int,
+    hasVisualOverflow: Boolean,
+): Boolean = hasVisualOverflow || lineCount > CuratedMovieSummaryCollapsedMaxLines
+
+internal fun curatedMovieSummaryMaxLines(isExpanded: Boolean): Int =
+    if (isExpanded) Int.MAX_VALUE else CuratedMovieSummaryCollapsedMaxLines
+
+@Composable
+private fun CuratedMovieSummarySection(summary: String) {
+    var isExpanded by rememberSaveable(summary) { mutableStateOf(false) }
+    var canToggle by remember(summary) { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(
+            text = "Summary",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = summary,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = curatedMovieSummaryMaxLines(isExpanded),
+            overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis,
+            onTextLayout = { textLayoutResult ->
+                if (!isExpanded) {
+                    canToggle =
+                        curatedMovieSummaryCanToggle(
+                            lineCount = textLayoutResult.lineCount,
+                            hasVisualOverflow = textLayoutResult.hasVisualOverflow,
+                        )
+                }
+            },
+        )
+        if (canToggle) {
+            TextButton(onClick = { isExpanded = !isExpanded }) {
+                Text(
+                    text =
+                        stringResource(
+                            if (isExpanded) {
+                                CoreR.string.movie_summary_collapse
+                            } else {
+                                CoreR.string.movie_summary_expand
+                            }
+                        )
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -451,3 +497,4 @@ private fun curatedMovieMeta(movie: MovieDetail): String =
 private val CuratedPreviewThumbnailDefaultAspectRatio = 16f / 9f
 private val CuratedPreviewThumbnailMinAspectRatio = 9f / 16f
 private val CuratedPreviewThumbnailMaxAspectRatio = 21f / 9f
+private val CuratedMovieSummaryCollapsedMaxLines = 4

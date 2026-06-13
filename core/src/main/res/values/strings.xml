@@ -119,4 +119,6 @@
     <string name="movie_preview_close">Close preview</string>
     <string name="movie_preview_previous">Previous preview image</string>
     <string name="movie_preview_next">Next preview image</string>
+    <string name="movie_summary_expand">Show more</string>
+    <string name="movie_summary_collapse">Show less</string>
 </resources>

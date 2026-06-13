@@ -80,6 +80,19 @@ class CuratedImageSelectionTest {
         assertEquals(21f / 9f, curatedPreviewThumbnailAspectRatio(width = 4000, height = 500), 0.0001f)
     }
 
+    @Test
+    fun movieSummaryToggleOnlyShowsWhenCollapsedTextOverflows() {
+        assertEquals(false, curatedMovieSummaryCanToggle(lineCount = 4, hasVisualOverflow = false))
+        assertEquals(true, curatedMovieSummaryCanToggle(lineCount = 5, hasVisualOverflow = false))
+        assertEquals(true, curatedMovieSummaryCanToggle(lineCount = 4, hasVisualOverflow = true))
+    }
+
+    @Test
+    fun movieSummaryMaxLinesReflectExpandedState() {
+        assertEquals(4, curatedMovieSummaryMaxLines(isExpanded = false))
+        assertEquals(Int.MAX_VALUE, curatedMovieSummaryMaxLines(isExpanded = true))
+    }
+
     private fun movieListItem(coverUrl: String?, thumbUrl: String?): MovieListItem =
         MovieListItem(
             id = "movie-1",
