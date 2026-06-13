@@ -83,6 +83,92 @@ class CuratedRepositoryTest {
     }
 
     @Test
+    fun getActorsReturnsDomainPageWithAbsoluteAvatarUrls() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "total": 1,
+                      "actors": [
+                        {
+                          "name": "Actor A",
+                          "avatarUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                          "avatarRemoteUrl": "https://example.test/avatar.jpg",
+                          "avatarLocalUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                          "hasLocalAvatar": true,
+                          "movieCount": 12,
+                          "userTags": ["favorite"]
+                        }
+                      ]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val page =
+            repository.getActors(
+                limit = 24,
+                offset = 48,
+                query = "Actor",
+                actorTag = "favorite",
+                sort = "movieCount",
+            )
+        val request = server.takeRequest()
+
+        assertEquals("/api/library/actors", request.requestUrl?.encodedPath)
+        assertEquals("Actor", request.requestUrl?.queryParameter("q"))
+        assertEquals(1, page.total)
+        assertEquals("Actor A", page.actors.first().name)
+        assertEquals("$origin/api/library/actors/Actor%20A/asset/avatar?v=1", page.actors.first().avatarUrl)
+        assertEquals("https://example.test/avatar.jpg", page.actors.first().avatarRemoteUrl)
+        assertEquals("$origin/api/library/actors/Actor%20A/asset/avatar?v=1", page.actors.first().avatarLocalUrl)
+    }
+
+    @Test
+    fun getActorProfileReturnsDomainProfileWithAbsoluteAvatarUrl() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "name": "Actor A",
+                      "avatarUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                      "avatarRemoteUrl": "https://example.test/avatar.jpg",
+                      "avatarLocalUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                      "hasLocalAvatar": true,
+                      "summary": "Profile summary",
+                      "homepage": "https://example.test/actor",
+                      "provider": "metatube",
+                      "providerActorId": "123",
+                      "height": 160,
+                      "birthday": "2000-01-01",
+                      "profileUpdatedAt": "2026-06-07T12:00:00Z",
+                      "userTags": ["favorite"],
+                      "externalLinks": ["https://example.test/profile"]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val profile = repository.getActorProfile(name = "Actor A")
+        val request = server.takeRequest()
+
+        assertEquals("/api/library/actors/profile", request.requestUrl?.encodedPath)
+        assertEquals("Actor A", request.requestUrl?.queryParameter("name"))
+        assertEquals("Actor A", profile.name)
+        assertEquals("$origin/api/library/actors/Actor%20A/asset/avatar?v=1", profile.avatarUrl)
+        assertEquals("https://example.test/avatar.jpg", profile.avatarRemoteUrl)
+        assertEquals("$origin/api/library/actors/Actor%20A/asset/avatar?v=1", profile.avatarLocalUrl)
+        assertEquals("Profile summary", profile.summary)
+        assertEquals(listOf("https://example.test/profile"), profile.externalLinks)
+    }
+
+    @Test
     fun getMovieReturnsDomainDetailWithAbsolutePreviewUrls() = runBlocking {
         server.enqueue(
             MockResponse()

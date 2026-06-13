@@ -60,6 +60,8 @@ import dev.jdtech.jellyfin.presentation.film.MovieScreen
 import dev.jdtech.jellyfin.presentation.film.PersonScreen
 import dev.jdtech.jellyfin.presentation.film.SeasonScreen
 import dev.jdtech.jellyfin.presentation.film.ShowScreen
+import dev.jdtech.jellyfin.presentation.curated.CuratedActorDetailScreen
+import dev.jdtech.jellyfin.presentation.curated.CuratedActorsScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedHistoryScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMovieDetailScreen
 import dev.jdtech.jellyfin.presentation.curated.CuratedMoviesScreen
@@ -93,6 +95,10 @@ import kotlinx.serialization.Serializable
 @Serializable data object HomeRoute
 
 @Serializable data object MediaRoute
+
+@Serializable data object ActorsRoute
+
+@Serializable data class ActorRoute(val name: String)
 
 @Serializable data object HistoryRoute
 
@@ -137,6 +143,12 @@ val mediaTab =
         title = CoreR.string.title_media,
         icon = CoreR.drawable.ic_library,
         route = MediaRoute,
+    )
+val actorsTab =
+    TabBarItem(
+        title = CoreR.string.title_actors,
+        icon = CoreR.drawable.ic_user,
+        route = ActorsRoute,
     )
 val historyTab =
     TabBarItem(
@@ -334,6 +346,19 @@ fun NavigationRoot(
                             SettingsRoute(indexes = intArrayOf(CoreR.string.title_settings))
                         )
                     },
+                )
+            }
+            composable<ActorsRoute> {
+                CuratedActorsScreen(
+                    onActorClick = { actorName -> navController.safeNavigate(ActorRoute(actorName)) }
+                )
+            }
+            composable<ActorRoute> { backStackEntry ->
+                val route: ActorRoute = backStackEntry.toRoute()
+                CuratedActorDetailScreen(
+                    actorName = route.name,
+                    navigateBack = { navController.safePopBackStack() },
+                    onMovieClick = { movieId -> navController.safeNavigate(MovieRoute(movieId)) },
                 )
             }
             composable<HistoryRoute> {
@@ -560,7 +585,7 @@ internal fun curatedStartDestination(
     }
 
 internal fun curatedNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
-    listOf(homeTab, mediaTab, historyTab)
+    listOf(homeTab, mediaTab, actorsTab, historyTab)
 
 internal fun isCuratedVisibleItem(item: FindroidItem): Boolean =
     when (item) {

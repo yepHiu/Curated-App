@@ -45,6 +45,32 @@ class CuratedApiClient(
         return get(url)
     }
 
+    fun getActors(
+        limit: Int = 50,
+        offset: Int = 0,
+        query: String? = null,
+        actorTag: String? = null,
+        sort: String? = null,
+    ): ActorsListDto {
+        val url =
+            apiUrlBuilder("/library/actors")
+                .addQueryParameter("limit", limit.toString())
+                .addQueryParameter("offset", offset.toString())
+                .addOptionalQueryParameter("q", query)
+                .addOptionalQueryParameter("actorTag", actorTag)
+                .addOptionalQueryParameter("sort", sort)
+                .build()
+        return get(url)
+    }
+
+    fun getActorProfile(name: String): ActorProfileDto {
+        val url =
+            apiUrlBuilder("/library/actors/profile")
+                .addQueryParameter("name", name)
+                .build()
+        return get(url)
+    }
+
     fun getMovie(movieId: String): MovieDetailDto {
         val url = movieUrlBuilder(movieId).build()
         return get(url)

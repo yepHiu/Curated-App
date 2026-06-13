@@ -1,5 +1,7 @@
 package dev.jdtech.jellyfin.presentation.curated
 
+import dev.jdtech.jellyfin.curated.api.ActorProfile
+import dev.jdtech.jellyfin.curated.api.ActorsPage
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
@@ -77,6 +79,16 @@ class CuratedHistoryLoaderTest {
             studio: String?,
             mode: String?,
         ): MoviesPage = error("Not used")
+
+        override suspend fun getActors(
+            limit: Int,
+            offset: Int,
+            query: String?,
+            actorTag: String?,
+            sort: String?,
+        ): ActorsPage = error("Not used")
+
+        override suspend fun getActorProfile(name: String): ActorProfile = error("Not used")
 
         override suspend fun getMovie(movieId: String): MovieDetail {
             val active = activeMovieRequests.incrementAndGet()

@@ -28,6 +28,38 @@ data class MoviesPage(
     val offset: Int,
 )
 
+data class ActorsPage(
+    val actors: List<ActorListItem>,
+    val total: Int,
+)
+
+data class ActorListItem(
+    val name: String,
+    val avatarUrl: String?,
+    val avatarRemoteUrl: String?,
+    val avatarLocalUrl: String?,
+    val hasLocalAvatar: Boolean,
+    val movieCount: Int,
+    val userTags: List<String>,
+)
+
+data class ActorProfile(
+    val name: String,
+    val avatarUrl: String?,
+    val avatarRemoteUrl: String?,
+    val avatarLocalUrl: String?,
+    val hasLocalAvatar: Boolean,
+    val summary: String?,
+    val homepage: String?,
+    val provider: String?,
+    val providerActorId: String?,
+    val height: Int?,
+    val birthday: String?,
+    val profileUpdatedAt: String?,
+    val userTags: List<String>,
+    val externalLinks: List<String>,
+)
+
 data class MovieDetail(
     val id: String,
     val title: String,

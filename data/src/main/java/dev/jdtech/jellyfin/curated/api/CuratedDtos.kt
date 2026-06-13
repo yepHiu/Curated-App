@@ -39,6 +39,41 @@ data class MoviesPageDto(
 )
 
 @Serializable
+data class ActorsListDto(
+    val total: Int,
+    val actors: List<ActorListItemDto> = emptyList(),
+)
+
+@Serializable
+data class ActorListItemDto(
+    val name: String,
+    val avatarUrl: String? = null,
+    val avatarRemoteUrl: String? = null,
+    val avatarLocalUrl: String? = null,
+    val hasLocalAvatar: Boolean = false,
+    val movieCount: Int = 0,
+    val userTags: List<String> = emptyList(),
+)
+
+@Serializable
+data class ActorProfileDto(
+    val name: String,
+    val avatarUrl: String? = null,
+    val avatarRemoteUrl: String? = null,
+    val avatarLocalUrl: String? = null,
+    val hasLocalAvatar: Boolean = false,
+    val summary: String? = null,
+    val homepage: String? = null,
+    val provider: String? = null,
+    val providerActorId: String? = null,
+    val height: Int? = null,
+    val birthday: String? = null,
+    val profileUpdatedAt: String? = null,
+    val userTags: List<String> = emptyList(),
+    val externalLinks: List<String> = emptyList(),
+)
+
+@Serializable
 data class MovieListItemDto(
     val id: String,
     val title: String,

@@ -1,5 +1,7 @@
 package dev.jdtech.jellyfin.curated.repository
 
+import dev.jdtech.jellyfin.curated.api.ActorProfile
+import dev.jdtech.jellyfin.curated.api.ActorsPage
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
 import dev.jdtech.jellyfin.curated.api.PlaybackDescriptor
@@ -14,6 +16,16 @@ interface CuratedRepository {
         studio: String? = null,
         mode: String? = null,
     ): MoviesPage
+
+    suspend fun getActors(
+        limit: Int = 50,
+        offset: Int = 0,
+        query: String? = null,
+        actorTag: String? = null,
+        sort: String? = null,
+    ): ActorsPage
+
+    suspend fun getActorProfile(name: String): ActorProfile
 
     suspend fun getMovie(movieId: String): MovieDetail
 

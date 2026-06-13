@@ -1,5 +1,7 @@
 package dev.jdtech.jellyfin.presentation.curated
 
+import dev.jdtech.jellyfin.curated.api.ActorProfile
+import dev.jdtech.jellyfin.curated.api.ActorsPage
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MovieListItem
 import dev.jdtech.jellyfin.curated.api.MoviesPage
@@ -208,6 +210,16 @@ class CuratedMoviesPagerTest {
             movieRequests += MovieRequest(limit = limit, offset = offset, query = query)
             return pages[movieRequests.lastIndex]
         }
+
+        override suspend fun getActors(
+            limit: Int,
+            offset: Int,
+            query: String?,
+            actorTag: String?,
+            sort: String?,
+        ): ActorsPage = error("Not used")
+
+        override suspend fun getActorProfile(name: String): ActorProfile = error("Not used")
 
         override suspend fun getMovie(movieId: String): MovieDetail = error("Not used")
 

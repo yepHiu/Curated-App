@@ -30,6 +30,41 @@ fun MoviesPageDto.toDomain(baseUrl: String): MoviesPage =
         offset = offset,
     )
 
+fun ActorListItemDto.toDomain(baseUrl: String): ActorListItem =
+    ActorListItem(
+        name = name,
+        avatarUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarUrl),
+        avatarRemoteUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarRemoteUrl),
+        avatarLocalUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarLocalUrl),
+        hasLocalAvatar = hasLocalAvatar,
+        movieCount = movieCount,
+        userTags = userTags,
+    )
+
+fun ActorsListDto.toDomain(baseUrl: String): ActorsPage =
+    ActorsPage(
+        actors = actors.map { it.toDomain(baseUrl) },
+        total = total,
+    )
+
+fun ActorProfileDto.toDomain(baseUrl: String): ActorProfile =
+    ActorProfile(
+        name = name,
+        avatarUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarUrl),
+        avatarRemoteUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarRemoteUrl),
+        avatarLocalUrl = CuratedUrlResolver.absoluteUrl(baseUrl, avatarLocalUrl),
+        hasLocalAvatar = hasLocalAvatar,
+        summary = summary,
+        homepage = homepage,
+        provider = provider,
+        providerActorId = providerActorId,
+        height = height,
+        birthday = birthday,
+        profileUpdatedAt = profileUpdatedAt,
+        userTags = userTags,
+        externalLinks = externalLinks,
+    )
+
 fun MovieDetailDto.toDomain(baseUrl: String): MovieDetail =
     MovieDetail(
         id = id,

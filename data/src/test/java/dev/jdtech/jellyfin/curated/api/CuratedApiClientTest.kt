@@ -199,6 +199,101 @@ class CuratedApiClientTest {
     }
 
     @Test
+    fun getActorsRequestsActorsEndpointWithFiltersAndParsesItems() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "total": 1,
+                      "actors": [
+                        {
+                          "name": "Actor A",
+                          "avatarUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                          "avatarRemoteUrl": "https://example.test/avatar.jpg",
+                          "avatarLocalUrl": "/api/library/actors/Actor%20A/asset/avatar?v=1",
+                          "hasLocalAvatar": true,
+                          "movieCount": 12,
+                          "userTags": ["favorite"]
+                        }
+                      ]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val page =
+            api.getActors(
+                limit = 24,
+                offset = 48,
+                query = "Actor",
+                actorTag = "favorite",
+                sort = "movieCount",
+            )
+        val request = server.takeRequest()
+
+        assertEquals("/api/library/actors", request.requestUrl?.encodedPath)
+        assertEquals("24", request.requestUrl?.queryParameter("limit"))
+        assertEquals("48", request.requestUrl?.queryParameter("offset"))
+        assertEquals("Actor", request.requestUrl?.queryParameter("q"))
+        assertEquals("favorite", request.requestUrl?.queryParameter("actorTag"))
+        assertEquals("movieCount", request.requestUrl?.queryParameter("sort"))
+        assertEquals(1, page.total)
+        assertEquals("Actor A", page.actors.first().name)
+        assertEquals("/api/library/actors/Actor%20A/asset/avatar?v=1", page.actors.first().avatarUrl)
+        assertEquals(true, page.actors.first().hasLocalAvatar)
+        assertEquals(12, page.actors.first().movieCount)
+        assertEquals(listOf("favorite"), page.actors.first().userTags)
+    }
+
+    @Test
+    fun getActorProfileRequestsProfileEndpointAndParsesProfile() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "name": "Actor/One",
+                      "avatarUrl": "/api/library/actors/Actor%2FOne/asset/avatar?v=1",
+                      "avatarRemoteUrl": "https://example.test/avatar.jpg",
+                      "avatarLocalUrl": "/api/library/actors/Actor%2FOne/asset/avatar?v=1",
+                      "hasLocalAvatar": true,
+                      "summary": "Profile summary",
+                      "homepage": "https://example.test/actor",
+                      "provider": "metatube",
+                      "providerActorId": "123",
+                      "height": 160,
+                      "birthday": "2000-01-01",
+                      "profileUpdatedAt": "2026-06-07T12:00:00Z",
+                      "userTags": ["favorite"],
+                      "externalLinks": ["https://example.test/profile"]
+                    }
+                    """
+                        .trimIndent()
+                )
+        )
+
+        val profile = api.getActorProfile(name = "Actor/One")
+        val request = server.takeRequest()
+
+        assertEquals("/api/library/actors/profile", request.requestUrl?.encodedPath)
+        assertEquals("Actor/One", request.requestUrl?.queryParameter("name"))
+        assertEquals("Actor/One", profile.name)
+        assertEquals("Profile summary", profile.summary)
+        assertEquals("https://example.test/actor", profile.homepage)
+        assertEquals("metatube", profile.provider)
+        assertEquals("123", profile.providerActorId)
+        assertEquals(160, profile.height)
+        assertEquals("2000-01-01", profile.birthday)
+        assertEquals("2026-06-07T12:00:00Z", profile.profileUpdatedAt)
+        assertEquals(listOf("favorite"), profile.userTags)
+        assertEquals(listOf("https://example.test/profile"), profile.externalLinks)
+    }
+
+    @Test
     fun getMovieEncodesMovieIdPathSegmentAndParsesDetail() {
         server.enqueue(
             MockResponse()

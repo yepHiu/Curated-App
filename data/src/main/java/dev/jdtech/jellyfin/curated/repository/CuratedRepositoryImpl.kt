@@ -1,6 +1,8 @@
 package dev.jdtech.jellyfin.curated.repository
 
 import dev.jdtech.jellyfin.curated.api.CuratedApiClient
+import dev.jdtech.jellyfin.curated.api.ActorProfile
+import dev.jdtech.jellyfin.curated.api.ActorsPage
 import dev.jdtech.jellyfin.curated.api.CuratedUrlResolver
 import dev.jdtech.jellyfin.curated.api.MovieDetail
 import dev.jdtech.jellyfin.curated.api.MoviesPage
@@ -41,6 +43,27 @@ class CuratedRepositoryImpl(
                 )
                 .toDomain(normalizedBaseUrl)
         }
+
+    override suspend fun getActors(
+        limit: Int,
+        offset: Int,
+        query: String?,
+        actorTag: String?,
+        sort: String?,
+    ): ActorsPage =
+        withContext(dispatcher) {
+            api.getActors(
+                    limit = limit,
+                    offset = offset,
+                    query = query,
+                    actorTag = actorTag,
+                    sort = sort,
+                )
+                .toDomain(normalizedBaseUrl)
+        }
+
+    override suspend fun getActorProfile(name: String): ActorProfile =
+        withContext(dispatcher) { api.getActorProfile(name).toDomain(normalizedBaseUrl) }
 
     override suspend fun getMovie(movieId: String): MovieDetail =
         withContext(dispatcher) { api.getMovie(movieId).toDomain(normalizedBaseUrl) }
