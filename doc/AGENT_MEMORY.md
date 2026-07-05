@@ -171,3 +171,8 @@ Agent 必须主动维护以下文档：
 ### 2026-07-06
 
 - Android app windows should opt into high-refresh displays where available. `MainActivity`, `BasePlayerActivity`, and `CuratedPlayerActivity` call `applyCuratedHighRefreshRatePreference()`, which prefers the highest valid refresh-rate display mode at the current physical resolution and falls back to the highest valid mode when the current resolution is unavailable.
+
+
+### 2026-07-06
+
+- Curated floating bottom navigation should follow a Telegram-like rounded pill pattern: a near-opaque glass container, equal-width vertical icon/label tabs, a subtle selected pill, and no low-opacity full-width dark strip over media content. Keep Home, My media, and Settings in the bottom bar; secondary destinations remain in the drawer.

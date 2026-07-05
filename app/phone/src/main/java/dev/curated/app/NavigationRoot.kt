@@ -4,8 +4,9 @@ import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,7 +40,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -190,6 +193,8 @@ val downloadsTab =
 private val CuratedFloatingNavigationBarHeight = 64.dp
 private val CuratedFloatingNavigationBarBottomMargin = 16.dp
 private val CuratedFloatingNavigationContentExtraScrollClearance = 24.dp
+private val CuratedFloatingNavigationBarMaxWidth = 520.dp
+private val CuratedFloatingNavigationItemHeight = 52.dp
 
 @Composable
 fun NavigationRoot(
@@ -613,12 +618,13 @@ private fun CuratedNavigationContentWithFloatingBar(
                 onNavigationItemClick = onNavigationItemClick,
                 modifier =
                     Modifier.align(Alignment.BottomCenter)
-                        .fillMaxWidth()
                         .padding(
                             start = 16.dp,
                             end = 16.dp,
                             bottom = safeDrawingBottom + CuratedFloatingNavigationBarBottomMargin,
-                        ),
+                        )
+                        .widthIn(max = curatedFloatingNavigationBarMaxWidth())
+                        .fillMaxWidth(),
             )
         }
     }
@@ -631,27 +637,31 @@ private fun CuratedFloatingBottomNavigationBar(
     onNavigationItemClick: (TabBarItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = curatedFloatingNavigationColors()
+
     Surface(
-        modifier = modifier.wrapContentWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 6.dp,
-        shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+        modifier = modifier,
+        shape = colors.shape,
+        color = colors.containerColor,
+        contentColor = colors.contentColor,
+        tonalElevation = 0.dp,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, colors.borderColor),
     ) {
         Row(
             modifier =
                 Modifier.height(CuratedFloatingNavigationBarHeight)
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             navigationItems.forEach { item ->
                 CuratedFloatingBottomNavigationItem(
                     item = item,
                     selected = selectedRoute == item.route::class.qualifiedName,
+                    colors = colors,
                     onClick = { onNavigationItemClick(item) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -662,40 +672,80 @@ private fun CuratedFloatingBottomNavigationBar(
 private fun CuratedFloatingBottomNavigationItem(
     item: TabBarItem,
     selected: Boolean,
+    colors: CuratedFloatingNavigationColors,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val containerColor =
-        if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-        } else {
-            Color.Transparent
-        }
-    val contentColor =
-        if (selected) {
-            MaterialTheme.colorScheme.onSurface
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-
     Surface(
         onClick = onClick,
-        shape = MaterialTheme.shapes.extraLarge,
-        color = containerColor,
-        contentColor = contentColor,
+        modifier = modifier.height(CuratedFloatingNavigationItemHeight),
+        shape = colors.shape,
+        color = if (selected) colors.selectedContainerColor else Color.Transparent,
+        contentColor = if (selected) colors.selectedContentColor else colors.unselectedContentColor,
+        tonalElevation = 0.dp,
     ) {
-        Row(
-            modifier = Modifier.height(48.dp).padding(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.fillMaxSize().padding(vertical = 5.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             Icon(
                 painter = painterResource(item.icon),
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(22.dp),
             )
-            Text(text = stringResource(item.title), style = MaterialTheme.typography.labelMedium)
+            Text(
+                text = stringResource(item.title),
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+            )
         }
     }
+}
+
+private data class CuratedFloatingNavigationColors(
+    val containerColor: Color,
+    val contentColor: Color,
+    val selectedContentColor: Color,
+    val unselectedContentColor: Color,
+    val selectedContainerColor: Color,
+    val borderColor: Color,
+    val shape: Shape,
+)
+
+@Composable
+private fun curatedFloatingNavigationColors(): CuratedFloatingNavigationColors {
+    val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
+    val contentColor =
+        if (isDarkTheme) {
+            colorScheme.inverseOnSurface
+        } else {
+            colorScheme.onSurface
+        }
+    val containerColor =
+        if (isDarkTheme) {
+            colorScheme.inverseSurface.copy(
+                alpha = curatedFloatingNavigationContainerAlpha(isDarkTheme = true)
+            )
+        } else {
+            colorScheme.surfaceContainerHigh.copy(
+                alpha = curatedFloatingNavigationContainerAlpha(isDarkTheme = false)
+            )
+        }
+
+    return CuratedFloatingNavigationColors(
+        containerColor = containerColor,
+        contentColor = contentColor,
+        selectedContentColor = contentColor,
+        unselectedContentColor = contentColor.copy(alpha = 0.68f),
+        selectedContainerColor =
+            colorScheme.primary.copy(
+                alpha = curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme)
+            ),
+        borderColor = colorScheme.outlineVariant.copy(alpha = if (isDarkTheme) 0.34f else 0.58f),
+        shape = CircleShape,
+    )
 }
 
 data class CuratedNavigationItemColorSpec(
@@ -810,6 +860,22 @@ internal fun curatedFloatingNavigationContentBottomPadding(safeDrawingBottom: an
         CuratedFloatingNavigationBarHeight +
         CuratedFloatingNavigationBarBottomMargin +
         CuratedFloatingNavigationContentExtraScrollClearance
+
+internal fun curatedFloatingNavigationBarMaxWidth() = CuratedFloatingNavigationBarMaxWidth
+
+internal fun curatedFloatingNavigationContainerAlpha(isDarkTheme: Boolean) =
+    if (isDarkTheme) {
+        0.90f
+    } else {
+        0.96f
+    }
+
+internal fun curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme: Boolean) =
+    if (isDarkTheme) {
+        0.24f
+    } else {
+        0.16f
+    }
 
 enum class CuratedNavigationLayout {
     ModalDrawer,

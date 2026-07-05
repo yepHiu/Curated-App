@@ -110,6 +110,21 @@ class NavigationRootTest {
     }
 
     @Test
+    fun curatedFloatingNavigationUsesTelegramLikeGlassChrome() {
+        assertEquals(520.dp, curatedFloatingNavigationBarMaxWidth())
+        assertEquals(0.90f, curatedFloatingNavigationContainerAlpha(isDarkTheme = true))
+        assertEquals(0.96f, curatedFloatingNavigationContainerAlpha(isDarkTheme = false))
+        assertTrue(
+            curatedFloatingNavigationContainerAlpha(isDarkTheme = true) >
+                curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme = true)
+        )
+        assertTrue(
+            curatedFloatingNavigationContainerAlpha(isDarkTheme = false) >
+                curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme = false)
+        )
+    }
+
+    @Test
     fun curatedNavigationLayoutUsesModalDrawerOnCompactWidth() {
         assertEquals(
             CuratedNavigationLayout.ModalDrawer,
