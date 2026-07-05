@@ -2,7 +2,6 @@ package dev.curated.app.presentation.privacy
 
 import android.app.Activity
 import android.app.Application
-import android.graphics.Color
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
@@ -13,6 +12,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import dev.curated.app.core.privacy.ActivityPrivacyLifecycleTracker
 import dev.curated.app.core.privacy.PrivacyOverlayGate
+import dev.curated.app.core.privacy.PrivacyOverlayStyle
 import dev.curated.app.settings.domain.AppPreferences
 import java.util.Collections
 import java.util.WeakHashMap
@@ -120,7 +120,7 @@ class GazeProtectionCoordinator @Inject constructor(
                 visibility = if (gate.isActive) View.VISIBLE else View.GONE
                 isClickable = true
                 isFocusable = true
-                setBackgroundColor(Color.argb(128, 0, 0, 0))
+                setBackgroundColor(PrivacyOverlayStyle.mixedBlurScrimColor())
                 setOnClickListener {
                     if (gate.onTap(System.currentTimeMillis())) {
                         hideOverlay(activity)
