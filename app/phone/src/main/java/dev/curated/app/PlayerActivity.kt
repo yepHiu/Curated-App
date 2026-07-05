@@ -106,7 +106,7 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         binding.playerView.player = viewModel.player
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = false)
         binding.playerView.setControllerVisibilityListener(
             PlayerView.ControllerVisibilityListener { visibility ->
                 if (visibility == View.GONE) {
@@ -320,12 +320,12 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
 
     override fun onResume() {
         super.onResume()
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = false)
     }
 
     override fun onPause() {
         super.onPause()
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = true)
     }
 
     override fun seekToPreviousChapterForGesture() = viewModel.seekToPreviousChapter()
@@ -373,15 +373,13 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
         finish()
     }
 
-    private fun applyPrivacyPlayerMute() {
-        if (
-            PrivacyAudioPolicy.shouldMutePlayerAudio(
+    private fun applyPrivacyPlayerVolume(privacyMuteActive: Boolean) {
+        viewModel.player.volume =
+            PrivacyAudioPolicy.playerVolume(
                 playerInternalMuteEnabled =
-                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute)
+                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute),
+                privacyMuteActive = privacyMuteActive,
             )
-        ) {
-            viewModel.player.volume = 0f
-        }
     }
 
     private fun pipParams(

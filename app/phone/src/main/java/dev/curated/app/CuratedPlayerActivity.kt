@@ -94,7 +94,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         binding.playerView.player = viewModel.player
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = false)
         isControlsLocked = false
         binding.playerView.setControllerVisibilityListener(
             PlayerView.ControllerVisibilityListener { visibility ->
@@ -207,7 +207,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
 
     override fun onResume() {
         super.onResume()
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = false)
         if (wasPip) {
             wasPip = false
         } else {
@@ -218,7 +218,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
 
     override fun onPause() {
         super.onPause()
-        applyPrivacyPlayerMute()
+        applyPrivacyPlayerVolume(privacyMuteActive = true)
         if (isInPictureInPictureMode) {
             wasPip = true
         } else {
@@ -228,15 +228,13 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
         }
     }
 
-    private fun applyPrivacyPlayerMute() {
-        if (
-            PrivacyAudioPolicy.shouldMutePlayerAudio(
+    private fun applyPrivacyPlayerVolume(privacyMuteActive: Boolean) {
+        viewModel.player.volume =
+            PrivacyAudioPolicy.playerVolume(
                 playerInternalMuteEnabled =
-                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute)
+                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute),
+                privacyMuteActive = privacyMuteActive,
             )
-        ) {
-            viewModel.player.volume = 0f
-        }
     }
 
     override fun onStop() {

@@ -23,7 +23,7 @@
     <string name="privacy_secure_screen">Block screenshots and previews</string>
     <string name="privacy_secure_screen_summary">Hide app content from screenshots, screen recording, and recent app previews.</string>
     <string name="privacy_player_internal_mute">Mute player audio internally</string>
-    <string name="privacy_player_internal_mute_summary">Set the player volume to zero when playback screens open, pause, or resume.</string>
+    <string name="privacy_player_internal_mute_summary">Set the player volume to zero while playback screens are paused for privacy, then restore audible playback on return.</string>
     <string name="settings_request_timeout">Request timeout</string>
     <string name="settings_connect_timeout">Connect timeout</string>
     <string name="settings_socket_timeout">Socket timeout</string>

@@ -62,7 +62,11 @@ class VolumePrivacyHelper @Inject constructor(
 
     override fun onActivityResumed(activity: Activity) = Unit
 
-    override fun onActivityPaused(activity: Activity) = muteMediaVolume()
+    override fun onActivityPaused(activity: Activity) {
+        if (PrivacyAudioPolicy.shouldMuteSystemMediaOnActivityPause()) {
+            muteMediaVolume()
+        }
+    }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 
