@@ -190,11 +190,11 @@ val downloadsTab =
         route = DownloadsRoute,
     )
 
-private val CuratedFloatingNavigationBarHeight = 64.dp
+private val CuratedFloatingNavigationBarHeight = 58.dp
 private val CuratedFloatingNavigationBarBottomMargin = 16.dp
 private val CuratedFloatingNavigationContentExtraScrollClearance = 24.dp
 private val CuratedFloatingNavigationBarMaxWidth = 520.dp
-private val CuratedFloatingNavigationItemHeight = 52.dp
+private val CuratedFloatingNavigationItemHeight = 46.dp
 
 @Composable
 fun NavigationRoot(
@@ -645,13 +645,13 @@ private fun CuratedFloatingBottomNavigationBar(
         color = colors.containerColor,
         contentColor = colors.contentColor,
         tonalElevation = 0.dp,
-        shadowElevation = 8.dp,
+        shadowElevation = 4.dp,
         border = BorderStroke(1.dp, colors.borderColor),
     ) {
         Row(
             modifier =
                 Modifier.height(CuratedFloatingNavigationBarHeight)
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -685,14 +685,14 @@ private fun CuratedFloatingBottomNavigationItem(
         tonalElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(vertical = 5.dp),
+            modifier = Modifier.fillMaxSize().padding(vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Icon(
                 painter = painterResource(item.icon),
                 contentDescription = null,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(21.dp),
             )
             Text(
                 text = stringResource(item.title),
@@ -717,22 +717,10 @@ private data class CuratedFloatingNavigationColors(
 private fun curatedFloatingNavigationColors(): CuratedFloatingNavigationColors {
     val colorScheme = MaterialTheme.colorScheme
     val isDarkTheme = colorScheme.background.luminance() < 0.5f
-    val contentColor =
-        if (isDarkTheme) {
-            colorScheme.inverseOnSurface
-        } else {
-            colorScheme.onSurface
-        }
+    val contentColor = colorScheme.onSurface
     val containerColor =
-        if (isDarkTheme) {
-            colorScheme.inverseSurface.copy(
-                alpha = curatedFloatingNavigationContainerAlpha(isDarkTheme = true)
-            )
-        } else {
-            colorScheme.surfaceContainerHigh.copy(
-                alpha = curatedFloatingNavigationContainerAlpha(isDarkTheme = false)
-            )
-        }
+        curatedFloatingNavigationContainerBaseColor(colorScheme.surfaceContainerHigh)
+            .copy(alpha = curatedFloatingNavigationContainerAlpha(isDarkTheme))
 
     return CuratedFloatingNavigationColors(
         containerColor = containerColor,
@@ -743,7 +731,7 @@ private fun curatedFloatingNavigationColors(): CuratedFloatingNavigationColors {
             colorScheme.primary.copy(
                 alpha = curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme)
             ),
-        borderColor = colorScheme.outlineVariant.copy(alpha = if (isDarkTheme) 0.34f else 0.58f),
+        borderColor = colorScheme.outlineVariant.copy(alpha = if (isDarkTheme) 0.30f else 0.58f),
         shape = CircleShape,
     )
 }
@@ -861,18 +849,25 @@ internal fun curatedFloatingNavigationContentBottomPadding(safeDrawingBottom: an
         CuratedFloatingNavigationBarBottomMargin +
         CuratedFloatingNavigationContentExtraScrollClearance
 
+internal fun curatedFloatingNavigationBarHeight() = CuratedFloatingNavigationBarHeight
+
+internal fun curatedFloatingNavigationItemHeight() = CuratedFloatingNavigationItemHeight
+
 internal fun curatedFloatingNavigationBarMaxWidth() = CuratedFloatingNavigationBarMaxWidth
+
+internal fun curatedFloatingNavigationContainerBaseColor(surfaceContainerHigh: Color) =
+    surfaceContainerHigh
 
 internal fun curatedFloatingNavigationContainerAlpha(isDarkTheme: Boolean) =
     if (isDarkTheme) {
-        0.90f
+        0.94f
     } else {
         0.96f
     }
 
 internal fun curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme: Boolean) =
     if (isDarkTheme) {
-        0.24f
+        0.20f
     } else {
         0.16f
     }

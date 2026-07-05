@@ -8,6 +8,7 @@ import dev.curated.app.core.presentation.theme.ColorDark
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -105,14 +106,16 @@ class NavigationRootTest {
 
     @Test
     fun curatedFloatingNavigationContentPaddingClearsFloatingBar() {
-        assertEquals(104.dp, curatedFloatingNavigationContentBottomPadding(0.dp))
-        assertEquals(128.dp, curatedFloatingNavigationContentBottomPadding(24.dp))
+        assertEquals(98.dp, curatedFloatingNavigationContentBottomPadding(0.dp))
+        assertEquals(122.dp, curatedFloatingNavigationContentBottomPadding(24.dp))
     }
 
     @Test
-    fun curatedFloatingNavigationUsesTelegramLikeGlassChrome() {
+    fun curatedFloatingNavigationUsesCompactCuratedSurfaceChrome() {
+        assertEquals(58.dp, curatedFloatingNavigationBarHeight())
+        assertEquals(46.dp, curatedFloatingNavigationItemHeight())
         assertEquals(520.dp, curatedFloatingNavigationBarMaxWidth())
-        assertEquals(0.90f, curatedFloatingNavigationContainerAlpha(isDarkTheme = true))
+        assertEquals(0.94f, curatedFloatingNavigationContainerAlpha(isDarkTheme = true))
         assertEquals(0.96f, curatedFloatingNavigationContainerAlpha(isDarkTheme = false))
         assertTrue(
             curatedFloatingNavigationContainerAlpha(isDarkTheme = true) >
@@ -122,6 +125,17 @@ class NavigationRootTest {
             curatedFloatingNavigationContainerAlpha(isDarkTheme = false) >
                 curatedFloatingNavigationSelectedContainerAlpha(isDarkTheme = false)
         )
+    }
+
+    @Test
+    fun curatedFloatingNavigationDarkChromeUsesCuratedSurfaceInsteadOfInverseSurface() {
+        val color =
+            curatedFloatingNavigationContainerBaseColor(
+                surfaceContainerHigh = ColorDark.surfaceContainerHighDark,
+            )
+
+        assertEquals(ColorDark.surfaceContainerHighDark, color)
+        assertNotEquals(ColorDark.inverseSurfaceDark, color)
     }
 
     @Test

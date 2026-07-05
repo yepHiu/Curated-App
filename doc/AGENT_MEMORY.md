@@ -175,4 +175,6 @@ Agent 必须主动维护以下文档：
 
 ### 2026-07-06
 
-- Curated floating bottom navigation should follow a Telegram-like rounded pill pattern: a near-opaque glass container, equal-width vertical icon/label tabs, a subtle selected pill, and no low-opacity full-width dark strip over media content. Keep Home, My media, and Settings in the bottom bar; secondary destinations remain in the drawer.
+- Curated floating bottom navigation should use a compact Curated-themed rounded pill: a dark `surfaceContainerHigh` chrome in dark theme, equal-width vertical icon/label tabs, a subtle primary selected pill, and no low-opacity full-width strip over media content. Keep Home, My media, and Settings in the bottom bar; secondary destinations remain in the drawer.
+
+- Refined Android floating bottom navigation to be shorter and calmer: the bar height is 58dp, item height is 46dp, dark theme chrome uses Curated `surfaceContainerHigh` instead of inverse/white glass, and selected state uses a lighter primary tint so the control sits more naturally over content.
