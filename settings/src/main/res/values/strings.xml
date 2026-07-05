@@ -15,6 +15,15 @@
     <string name="settings_cache_size">Cache size</string>
     <string name="settings_cache_size_message">App will use this amount of MB of your disk space to store images from the Curated server. Larger values might be beneficial on slower networks.</string>
     <string name="settings_category_network">Network</string>
+    <string name="settings_category_privacy">Privacy protection</string>
+    <string name="privacy_gaze_protection">Visual protection overlay</string>
+    <string name="privacy_gaze_protection_summary">Blur and dim content when opening or leaving the app.</string>
+    <string name="privacy_auto_mute">Mute media volume</string>
+    <string name="privacy_auto_mute_summary">Set system media volume to zero when the app enters or leaves the foreground.</string>
+    <string name="privacy_secure_screen">Block screenshots and previews</string>
+    <string name="privacy_secure_screen_summary">Hide app content from screenshots, screen recording, and recent app previews.</string>
+    <string name="privacy_player_internal_mute">Mute player audio internally</string>
+    <string name="privacy_player_internal_mute_summary">Set the player volume to zero when playback screens open, pause, or resume.</string>
     <string name="settings_request_timeout">Request timeout</string>
     <string name="settings_connect_timeout">Connect timeout</string>
     <string name="settings_socket_timeout">Socket timeout</string>

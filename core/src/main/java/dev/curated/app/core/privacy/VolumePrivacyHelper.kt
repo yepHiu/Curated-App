@@ -6,6 +6,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Bundle
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.curated.app.settings.domain.AppPreferences
 import javax.inject.Inject
 import javax.inject.Singleton
 import timber.log.Timber
@@ -13,6 +14,7 @@ import timber.log.Timber
 @Singleton
 class VolumePrivacyHelper @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val appPreferences: AppPreferences,
 ) : Application.ActivityLifecycleCallbacks {
     private val audioManager: AudioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -37,6 +39,14 @@ class VolumePrivacyHelper @Inject constructor(
     override fun onActivityStopped(activity: Activity) = lifecycleTracker.onActivityStopped()
 
     fun muteMediaVolume() {
+        if (
+            !PrivacyAudioPolicy.shouldMuteSystemMedia(
+                autoMuteEnabled = appPreferences.getValue(appPreferences.privacyAutoMute)
+            )
+        ) {
+            return
+        }
+
         runCatching {
             audioManager.setStreamVolume(
                 AudioManager.STREAM_MUSIC,
@@ -52,7 +62,7 @@ class VolumePrivacyHelper @Inject constructor(
 
     override fun onActivityResumed(activity: Activity) = Unit
 
-    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) = muteMediaVolume()
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 

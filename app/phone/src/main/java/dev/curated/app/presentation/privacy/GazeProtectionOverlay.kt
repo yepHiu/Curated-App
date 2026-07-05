@@ -9,9 +9,11 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import dev.curated.app.core.privacy.ActivityPrivacyLifecycleTracker
 import dev.curated.app.core.privacy.PrivacyOverlayGate
+import dev.curated.app.settings.domain.AppPreferences
 import java.util.Collections
 import java.util.WeakHashMap
 import javax.inject.Inject
@@ -22,7 +24,9 @@ private const val PRIVACY_OVERLAY_TAG = "curated_privacy_overlay"
 private const val BLUR_RADIUS_DP = 20f
 
 @Singleton
-class GazeProtectionCoordinator @Inject constructor() : Application.ActivityLifecycleCallbacks {
+class GazeProtectionCoordinator @Inject constructor(
+    private val appPreferences: AppPreferences,
+) : Application.ActivityLifecycleCallbacks {
     private val activeActivities =
         Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
     private val gates = WeakHashMap<Activity, PrivacyOverlayGate>()
@@ -43,7 +47,12 @@ class GazeProtectionCoordinator @Inject constructor() : Application.ActivityLife
 
     override fun onActivityStarted(activity: Activity) {
         activeActivities.add(activity)
-        installOverlay(activity)
+        applySecureScreen(activity)
+        if (isGazeProtectionEnabled()) {
+            installOverlay(activity)
+        } else {
+            hideOverlay(activity)
+        }
         lifecycleTracker.onActivityStarted()
     }
 
@@ -58,14 +67,28 @@ class GazeProtectionCoordinator @Inject constructor() : Application.ActivityLife
     }
 
     private fun showOverlayOnActiveActivities() {
+        if (!isGazeProtectionEnabled()) {
+            activeActivities.forEach(::hideOverlay)
+            return
+        }
+
         activeActivities.forEach { activity ->
-            installOverlay(activity)?.let { overlay ->
-                val gate = gates.getOrPut(activity) { PrivacyOverlayGate() }
-                gate.activate()
-                overlay.visibility = View.VISIBLE
-                applyContentBlur(activity, enabled = true)
-                overlay.bringToFront()
-            }
+            showOverlay(activity)
+        }
+    }
+
+    private fun showOverlay(activity: Activity) {
+        if (!isGazeProtectionEnabled()) {
+            hideOverlay(activity)
+            return
+        }
+
+        installOverlay(activity)?.let { overlay ->
+            val gate = gates.getOrPut(activity) { PrivacyOverlayGate() }
+            gate.activate()
+            overlay.visibility = View.VISIBLE
+            applyContentBlur(activity, enabled = true)
+            overlay.bringToFront()
         }
     }
 
@@ -74,6 +97,17 @@ class GazeProtectionCoordinator @Inject constructor() : Application.ActivityLife
         findOverlay(activity)?.visibility = View.GONE
         applyContentBlur(activity, enabled = false)
     }
+
+    private fun applySecureScreen(activity: Activity) {
+        if (appPreferences.getValue(appPreferences.privacySecureScreen)) {
+            activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
+    private fun isGazeProtectionEnabled(): Boolean =
+        appPreferences.getValue(appPreferences.privacyGazeProtection)
 
     private fun installOverlay(activity: Activity): View? {
         val gate = gates.getOrPut(activity) { PrivacyOverlayGate() }
@@ -129,11 +163,18 @@ class GazeProtectionCoordinator @Inject constructor() : Application.ActivityLife
         }
     }
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        applySecureScreen(activity)
+    }
 
-    override fun onActivityResumed(activity: Activity) = Unit
+    override fun onActivityResumed(activity: Activity) {
+        applySecureScreen(activity)
+    }
 
-    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) {
+        applySecureScreen(activity)
+        showOverlay(activity)
+    }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 }

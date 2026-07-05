@@ -20,6 +20,12 @@ class AppPreferences @Inject constructor(val sharedPreferences: SharedPreference
     val homeLatest = Preference<Boolean>("home_latest", true)
     val displayExtraInfo = Preference("pref_display_extra_info", false)
 
+    // Privacy
+    val privacyGazeProtection = Preference("pref_privacy_gaze_protection", true)
+    val privacyAutoMute = Preference("pref_privacy_auto_mute", true)
+    val privacySecureScreen = Preference("pref_privacy_secure_screen", true)
+    val privacyPlayerInternalMute = Preference("pref_privacy_player_internal_mute", true)
+
     // Player
     val playerBrightness = Preference("pref_player_brightness", -1.0f)
 

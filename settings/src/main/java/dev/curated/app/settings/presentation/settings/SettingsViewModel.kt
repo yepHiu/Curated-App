@@ -151,6 +151,69 @@ class SettingsViewModel @Inject constructor(private val appPreferences: AppPrefe
                 preferences =
                     listOf(
                         PreferenceCategory(
+                            nameStringResource = R.string.settings_category_privacy,
+                            iconDrawableId = R.drawable.ic_info,
+                            onClick = {
+                                viewModelScope.launch {
+                                    eventsChannel.send(
+                                        SettingsEvent.NavigateToSettings(
+                                            intArrayOf(it.nameStringResource)
+                                        )
+                                    )
+                                }
+                            },
+                            nestedPreferenceGroups =
+                                listOf(
+                                    PreferenceGroup(
+                                        preferences =
+                                            listOf(
+                                                PreferenceSwitch(
+                                                    nameStringResource =
+                                                        R.string.privacy_gaze_protection,
+                                                    descriptionStringRes =
+                                                        R.string.privacy_gaze_protection_summary,
+                                                    supportedDeviceTypes = listOf(DeviceType.PHONE),
+                                                    backendPreference =
+                                                        appPreferences.privacyGazeProtection,
+                                                ),
+                                                PreferenceSwitch(
+                                                    nameStringResource =
+                                                        R.string.privacy_auto_mute,
+                                                    descriptionStringRes =
+                                                        R.string.privacy_auto_mute_summary,
+                                                    supportedDeviceTypes = listOf(DeviceType.PHONE),
+                                                    backendPreference =
+                                                        appPreferences.privacyAutoMute,
+                                                ),
+                                                PreferenceSwitch(
+                                                    nameStringResource =
+                                                        R.string.privacy_secure_screen,
+                                                    descriptionStringRes =
+                                                        R.string.privacy_secure_screen_summary,
+                                                    supportedDeviceTypes = listOf(DeviceType.PHONE),
+                                                    backendPreference =
+                                                        appPreferences.privacySecureScreen,
+                                                ),
+                                                PreferenceSwitch(
+                                                    nameStringResource =
+                                                        R.string.privacy_player_internal_mute,
+                                                    descriptionStringRes =
+                                                        R.string
+                                                            .privacy_player_internal_mute_summary,
+                                                    supportedDeviceTypes = listOf(DeviceType.PHONE),
+                                                    backendPreference =
+                                                        appPreferences.privacyPlayerInternalMute,
+                                                ),
+                                            )
+                                    )
+                                ),
+                        )
+                    )
+            ),
+            PreferenceGroup(
+                preferences =
+                    listOf(
+                        PreferenceCategory(
                             nameStringResource = R.string.settings_category_player,
                             iconDrawableId = R.drawable.ic_play,
                             onClick = {

@@ -33,6 +33,7 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
 import dagger.hilt.android.AndroidEntryPoint
+import dev.curated.app.core.privacy.PrivacyAudioPolicy
 import dev.curated.app.databinding.ActivityPlayerBinding
 import dev.curated.app.player.local.presentation.PlayerEvents
 import dev.curated.app.player.local.presentation.PlayerViewModel
@@ -105,6 +106,7 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         binding.playerView.player = viewModel.player
+        applyPrivacyPlayerMute()
         binding.playerView.setControllerVisibilityListener(
             PlayerView.ControllerVisibilityListener { visibility ->
                 if (visibility == View.GONE) {
@@ -316,6 +318,16 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
         hideSystemUI()
     }
 
+    override fun onResume() {
+        super.onResume()
+        applyPrivacyPlayerMute()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        applyPrivacyPlayerMute()
+    }
+
     override fun seekToPreviousChapterForGesture() = viewModel.seekToPreviousChapter()
 
     override fun seekToNextChapterForGesture() = viewModel.seekToNextChapter()
@@ -359,6 +371,17 @@ class PlayerActivity : BasePlayerActivity(), PlayerGestureHost {
         }
         handler.removeCallbacks(skipButtonTimeout)
         finish()
+    }
+
+    private fun applyPrivacyPlayerMute() {
+        if (
+            PrivacyAudioPolicy.shouldMutePlayerAudio(
+                playerInternalMuteEnabled =
+                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute)
+            )
+        ) {
+            viewModel.player.volume = 0f
+        }
     }
 
     private fun pipParams(

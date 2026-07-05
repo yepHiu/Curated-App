@@ -46,6 +46,15 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun curatedMvpKeepsPrivacyProtectionSettingsVisible() {
+        assertFalse(isCuratedHiddenPreference(R.string.settings_category_privacy))
+        assertFalse(isCuratedHiddenPreference(R.string.privacy_gaze_protection))
+        assertFalse(isCuratedHiddenPreference(R.string.privacy_auto_mute))
+        assertFalse(isCuratedHiddenPreference(R.string.privacy_secure_screen))
+        assertFalse(isCuratedHiddenPreference(R.string.privacy_player_internal_mute))
+    }
+
+    @Test
     fun curatedMvpFiltersHiddenGroupsAndKeepsExtraInfoSwitch() {
         val visiblePreference = PreferenceSwitch(R.string.extra_info, backendPreference = booleanPref)
         val hiddenPreference =
@@ -104,6 +113,57 @@ class SettingsViewModelTest {
         assertEquals(
             listOf(R.string.app_language),
             filteredLanguage.nestedPreferenceGroups.single().preferences.map {
+                it.nameStringResource
+            },
+        )
+    }
+
+    @Test
+    fun curatedMvpFiltersNestedPrivacySettingsAsVisible() {
+        val privacyCategory =
+            PreferenceCategory(
+                nameStringResource = R.string.settings_category_privacy,
+                nestedPreferenceGroups =
+                    listOf(
+                        PreferenceGroup(
+                            preferences =
+                                listOf(
+                                    PreferenceSwitch(
+                                        R.string.privacy_gaze_protection,
+                                        backendPreference = booleanPref,
+                                    ),
+                                    PreferenceSwitch(
+                                        R.string.privacy_auto_mute,
+                                        backendPreference = booleanPref,
+                                    ),
+                                    PreferenceSwitch(
+                                        R.string.privacy_secure_screen,
+                                        backendPreference = booleanPref,
+                                    ),
+                                    PreferenceSwitch(
+                                        R.string.privacy_player_internal_mute,
+                                        backendPreference = booleanPref,
+                                    ),
+                                )
+                        )
+                    ),
+            )
+
+        val filtered =
+            curatedVisiblePreferenceGroups(
+                listOf(PreferenceGroup(preferences = listOf(privacyCategory)))
+            )
+
+        val filteredPrivacy =
+            filtered.single().preferences.filterIsInstance<PreferenceCategory>().single()
+        assertEquals(
+            listOf(
+                R.string.privacy_gaze_protection,
+                R.string.privacy_auto_mute,
+                R.string.privacy_secure_screen,
+                R.string.privacy_player_internal_mute,
+            ),
+            filteredPrivacy.nestedPreferenceGroups.single().preferences.map {
                 it.nameStringResource
             },
         )

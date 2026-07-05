@@ -34,6 +34,7 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import dev.curated.app.core.privacy.PrivacyAudioPolicy
 import dev.curated.app.databinding.ActivityPlayerBinding
 import dev.curated.app.presentation.curated.CuratedPlayerEvent
 import dev.curated.app.presentation.curated.CuratedPlayerViewModel
@@ -93,6 +94,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         binding.playerView.player = viewModel.player
+        applyPrivacyPlayerMute()
         isControlsLocked = false
         binding.playerView.setControllerVisibilityListener(
             PlayerView.ControllerVisibilityListener { visibility ->
@@ -205,6 +207,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
 
     override fun onResume() {
         super.onResume()
+        applyPrivacyPlayerMute()
         if (wasPip) {
             wasPip = false
         } else {
@@ -215,12 +218,24 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
 
     override fun onPause() {
         super.onPause()
+        applyPrivacyPlayerMute()
         if (isInPictureInPictureMode) {
             wasPip = true
         } else {
             viewModel.playWhenReady = viewModel.player.playWhenReady
             viewModel.player.playWhenReady = false
             viewModel.updatePlaybackProgress()
+        }
+    }
+
+    private fun applyPrivacyPlayerMute() {
+        if (
+            PrivacyAudioPolicy.shouldMutePlayerAudio(
+                playerInternalMuteEnabled =
+                    appPreferences.getValue(appPreferences.privacyPlayerInternalMute)
+            )
+        ) {
+            viewModel.player.volume = 0f
         }
     }
 

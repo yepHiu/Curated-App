@@ -2,7 +2,7 @@
 
 本文件是 Curated App 项目的 agent 记忆索引。它记录后续 agent 应主动继承和维护的长期事实、规则和变更线索。
 
-更新时间：2026-07-05
+更新时间：2026-07-06
 维护者：agent
 
 ## 事实源
@@ -51,7 +51,8 @@
 - Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
 - Curated 首页顶部栏保留设置入口，My media 顶部栏保留搜索和设置入口，二者都不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
-- Android 隐私防护由 App 自己注册的 `Application.ActivityLifecycleCallbacks` 驱动，不依赖 `ProcessLifecycleOwner`；进入前台和退到后台时将 `AudioManager.STREAM_MUSIC` 调为 0，进入/返回 App 时所有 Activity 顶层显示 50% 黑色遮挡，Android 12+ 同时对底层内容施加 blur，三连击解除遮挡。
+- Android 隐私防护由 App 自己注册的 `Application.ActivityLifecycleCallbacks` 驱动，不依赖 `ProcessLifecycleOwner`；默认开启系统媒体静音、播放器内部音量归零、50% 黑色视觉遮挡、Android 12+ blur，以及 `FLAG_SECURE` 截图/录屏/最近任务预览保护。
+- Android 隐私防护设置位于设置页 `Privacy protection` 分类，包含 `privacyGazeProtection`、`privacyAutoMute`、`privacySecureScreen`、`privacyPlayerInternalMute` 四个本地开关，默认值均为 `true`。
 - Android UI 视觉方向是默认深色、内容优先、低干扰媒体库界面、粉色品牌主色。
 - Android Compose 页面顶部栏、返回按钮、标题、筛选栏和首屏主要内容必须主动处理 `WindowInsets.safeDrawing` 或项目 `rememberSafePadding()`，避免与通知栏、挖孔屏或显示裁切区域重叠；不要只写固定顶部间距。
 - Curated 底部导航 / 导航栏 item 的选中态图标和文字必须使用高对比内容色（当前为 `MaterialTheme.colorScheme.onSurface`），不要依赖 Material 默认灰色 token；未选中态可使用 `onSurfaceVariant`。
@@ -144,4 +145,8 @@ Agent 必须主动维护以下文档：
 - GitHub 仓库 URL 更新为 `https://github.com/wujiahui/curated-droid`。
 - 旧品牌名 `Findroid`/`findroid`/`dev.jdtech.jellyfin` 已从所有活跃源文件中清除（历史 `doc/` 分析文档中的旧路径保留作为事实记录）。
 - 修复 Android 隐私防护生命周期：不再依赖被 manifest 移除的 AndroidX Startup / `ProcessLifecycleOwner` 初始化链，改用 `ActivityLifecycleCallbacks` 统计 App 前后台边界；静音在进入前台和退到后台时触发，视觉遮挡安装到所有 Activity，覆盖 MainActivity 与播放器页面。
+
+### 2026-07-06
+
+- 加强 Android 隐私防护：新增默认开启的本地隐私开关，设置页增加 `Privacy protection` 分类；视觉遮挡支持在 Activity pause 时立即显示以保护最近任务快照，`FLAG_SECURE` 用于阻止截图、录屏和最近任务预览；双重静音同时覆盖系统 `STREAM_MUSIC` 和播放器内部 `Player.volume = 0f`。
 
