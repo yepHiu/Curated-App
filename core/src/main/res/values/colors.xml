@@ -40,7 +40,7 @@
     <color name="transparent_black_300">#4D000000</color>
     <color name="red">#FF6F87</color>
     <color name="yellow">#F2C94C</color>
-    <color name="player_background">#AA000000</color>
+    <color name="player_background">#66000000</color>
 
     <color name="logo_primary">#FE628E</color>
     <color name="logo_secondary">#8B9CFF</color>

@@ -39,6 +39,7 @@
 - `PlayerActivity` 和 `CuratedPlayerActivity` 进入播放页和解锁控制层后使用 `sensor` / `SCREEN_ORIENTATION_SENSOR`，让竖屏手机保持竖屏播放，只有设备传感器触发横屏时才横屏；锁定控制层时才使用 `SCREEN_ORIENTATION_LOCKED` 保持当前方向。
 - `PlayerActivity` 和 `CuratedPlayerActivity` 的播放控制条不展示音频轨道设置和字幕轨道设置入口。
 - 播放页竖屏中间控制按钮必须保持紧凑并几何居中：`exo_main_controls.xml` 中心行应占满父宽、使用 `android:gravity="center"`，按钮间距保持左右对称的 `8dp`，按钮自身保留 `16dp` padding 以维持触控面积。
+- 播放页控制层背景使用 `player_background = #66000000`，即约 40% 黑色遮罩；不要把暂停/控制层显示时的普通播放器 HUD 调回高不透明度，以免视频画面被过度遮挡。隐私保护遮罩是独立机制，不应与播放器控制层背景混用。
 - 当前 Curated 播放器已实现 progress 回写：播放中约每 10 秒、暂停/停止播放和播放结束时调用 `PUT /api/playback/progress/{movieId}`，写入失败只记录日志，不中断播放。
 - 当前 Curated 播放闭环尚未实现 HLS session delete、played movies、watch time 统计和 direct 到 HLS 的显式 fallback。
 - Android 观看历史入口位于底部导航 `History` tab，使用 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
@@ -154,3 +155,4 @@ Agent 必须主动维护以下文档：
 - 将 Android 视觉遮挡调整为 30% 黑色模糊遮挡：遮罩色为黑色 `#000000` 且 alpha 为 77，叠加在 blur 内容之上。
 - 修复从视频播放页返回影片详情页后残留模糊遮罩的问题：新增 pause 遮罩状态跟踪，只有真正经历 App 退后台的遮罩会在恢复前台时保留，App 内 Activity 切换返回时自动隐藏临时遮罩。
 - 修复播放页无声音的问题：播放器内部静音改为仅在播放页 pause 的隐私静音状态下生效，播放页创建和恢复前台时将 `Player.volume` 设回可听音量；系统媒体静音不再响应 App 内 Activity pause，避免详情页进入播放页时被再次归零。
+- 降低播放器暂停/控制层遮罩强度：`player_background` 从 `#AA000000` 调整为 `#66000000`，让暂停时显示控制组件仍保持可读，同时减少对视频画面的遮挡。
