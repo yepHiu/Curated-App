@@ -166,3 +166,8 @@ Agent 必须主动维护以下文档：
 ### 2026-07-06
 
 - Android main navigation now uses a floating bottom pill bar for Home, My media, and Settings. Secondary destinations such as Actors and History remain in the navigation drawer, and top-level scrollable pages reserve bottom content padding so their last content can scroll above the floating bar instead of being obscured.
+
+
+### 2026-07-06
+
+- Android app windows should opt into high-refresh displays where available. `MainActivity`, `BasePlayerActivity`, and `CuratedPlayerActivity` call `applyCuratedHighRefreshRatePreference()`, which prefers the highest valid refresh-rate display mode at the current physical resolution and falls back to the highest valid mode when the current resolution is unavailable.

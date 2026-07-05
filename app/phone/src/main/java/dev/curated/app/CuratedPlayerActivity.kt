@@ -80,6 +80,7 @@ class CuratedPlayerActivity : AppCompatActivity(), PlayerGestureHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.applyCuratedHighRefreshRatePreference()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val movieId = intent.getStringExtra(CuratedPlayerContract.EXTRA_MOVIE_ID)
