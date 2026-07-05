@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.jdtech.jellyfin.core"
+    namespace = "dev.curated.app.core"
     compileSdk = Versions.COMPILE_SDK
     buildToolsVersion = Versions.BUILD_TOOLS
 

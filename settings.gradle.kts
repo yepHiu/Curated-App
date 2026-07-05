@@ -1,6 +1,6 @@
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-rootProject.name = "findroid"
+rootProject.name = "curated-app"
 
 include(":app:phone")
 include(":core")

@@ -10,19 +10,19 @@ plugins {
 }
 
 android {
-    namespace = "dev.jdtech.jellyfin"
+    namespace = "dev.curated.app"
     compileSdk = Versions.COMPILE_SDK
     buildToolsVersion = Versions.BUILD_TOOLS
 
     defaultConfig {
-        applicationId = "dev.jdtech.jellyfin"
+        applicationId = "dev.curated.app"
         minSdk = Versions.MIN_SDK
         targetSdk = Versions.TARGET_SDK
 
         versionCode = Versions.APP_CODE
         versionName = Versions.APP_NAME
 
-        testInstrumentationRunner = "dev.jdtech.jellyfin.HiltTestRunner"
+        testInstrumentationRunner = "dev.curated.app.HiltTestRunner"
     }
 
     buildTypes {

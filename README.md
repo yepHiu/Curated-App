@@ -1,23 +1,10 @@
-![Findroid banner](images/findroid-banner.png)
+![Curated App banner](images/findroid-banner.png)
 
-# Findroid
-![GitHub release (with filter)](https://img.shields.io/github/v/release/jarnedemeulemeester/findroid?style=for-the-badge)
-![GitHub repo stars](https://img.shields.io/github/stars/jarnedemeulemeester/findroid?style=for-the-badge)
-![GitHub issues](https://img.shields.io/github/issues/jarnedemeulemeester/findroid?style=for-the-badge)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/jarnedemeulemeester/findroid?style=for-the-badge)
-![GitHub all releases](https://img.shields.io/github/downloads/jarnedemeulemeester/findroid/total?style=for-the-badge)
-![GitHub](https://img.shields.io/github/license/jarnedemeulemeester/findroid?style=for-the-badge)
+# Curated App
 
-Findroid is third-party Android application for Jellyfin that provides a native user interface to browse and play movies and series.
-
-I am developing this application in my spare time.
+Curated App is a native Android client for the Curated media server, providing a clean interface to browse and play movies and series.
 
 **This project is in its early stages so expect bugs.**
-
-[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80">](https://play.google.com/store/apps/details?id=dev.jdtech.jellyfin)
-[<img src="https://user-images.githubusercontent.com/32322857/219019331-027a6775-7362-44bb-a026-281f71e9b37b.png" alt="Available at Amazon Appstore" height="80">](https://www.amazon.com/gp/product/B0BTWC8DNZ)
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/dev.jdtech.jellyfin)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/dev.jdtech.jellyfin)
 
 ## Screenshots
 | Home                                | Library                             | Movie                           | Season                            | Episode                             |
@@ -57,10 +44,12 @@ I am developing this application in my spare time.
 - Chromecast support
 
 ## Translating
-[JDTech Weblate](https://weblate.jdtech.dev) is a self-hosted instance of Weblate where you can translate this project and future projects of mine.
+
+Translations are maintained in the project's resource files.
 
 ## Questions?
-We have a [Discord server](https://discord.gg/tg5VvTFwTV) to discuss future development or ask general questions.
+
+Open an issue on the [GitHub repository](https://github.com/wujiahui/curated-droid).
 
 ## License
 This project is licensed under [GPLv3](LICENSE).

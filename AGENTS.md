@@ -1,4 +1,4 @@
-# Curated Droid Agent Rules
+# Curated App Agent Rules
 
 本文件是仓库级 agent 规则入口。后续 agent 在开始任何代码、文档、设计、API 或 UI 工作前，必须先读取本文件，并按这里列出的项目背景资料执行。
 

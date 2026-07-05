@@ -1,8 +1,8 @@
 # Agent Memory
 
-本文件是 Curated Droid 项目的 agent 记忆索引。它记录后续 agent 应主动继承和维护的长期事实、规则和变更线索。
+本文件是 Curated App 项目的 agent 记忆索引。它记录后续 agent 应主动继承和维护的长期事实、规则和变更线索。
 
-更新时间：2026-06-13
+更新时间：2026-07-05
 维护者：agent
 
 ## 事实源
@@ -137,4 +137,9 @@ Agent 必须主动维护以下文档：
 - 新增 Curated 播放进度回写和续播：Android 播放器周期性与暂停/结束时写入 `PUT /api/playback/progress/{movieId}`，起播优先使用 `resumePositionSec`，My media 影片卡片展示历史播放进度小横条。
 - 新增 Android 演员展示功能：Curated 底部导航显示 `Home`、`My media`、`Actors`、`History`，`ActorsRoute` 使用 `GET /api/library/actors?limit=50&offset=N&q=<query>&sort=movieCount` 分页列出演员并支持演员名/用户标签搜索。
 - 新增 Android 演员详情页：`ActorRoute(name)` 调用 `GET /api/library/actors/profile?name=<actorName>` 展示演员资料，参演影片列表使用现有 `GET /api/library/movies?actor=<actorName>&limit=50&offset=N` 分页加载，影片卡片点击进入现有 `MovieRoute(movieId)` 详情页。
-- 新增 Android 影片详情页预览图：详情页在标题 / 播放按钮后展示 `MovieDetail.previewImages` 横向缩略图，点击后打开全屏图片查看器，支持关闭、上一张 / 下一张和 `1 / N` 位置提示。
+### 2026-07-05
+
+- 品牌重塑：项目从 Findroid → Curated App，显示名 `app_name` = "Curated App"，Gradle 根项目名 `curated-app`，applicationId + Kotlin 包名 `dev.curated.app`，Compose 主题函数 `CuratedTheme`，XML 主题样式 `Theme.Curated`/`Theme.Curated.Player`。
+- GitHub 仓库 URL 更新为 `https://github.com/wujiahui/curated-droid`。
+- 旧品牌名 `Findroid`/`findroid`/`dev.jdtech.jellyfin` 已从所有活跃源文件中清除（历史 `doc/` 分析文档中的旧路径保留作为事实记录）。
+
