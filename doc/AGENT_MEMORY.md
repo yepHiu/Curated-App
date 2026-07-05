@@ -156,3 +156,8 @@ Agent 必须主动维护以下文档：
 - 修复从视频播放页返回影片详情页后残留模糊遮罩的问题：新增 pause 遮罩状态跟踪，只有真正经历 App 退后台的遮罩会在恢复前台时保留，App 内 Activity 切换返回时自动隐藏临时遮罩。
 - 修复播放页无声音的问题：播放器内部静音改为仅在播放页 pause 的隐私静音状态下生效，播放页创建和恢复前台时将 `Player.volume` 设回可听音量；系统媒体静音不再响应 App 内 Activity pause，避免详情页进入播放页时被再次归零。
 - 降低播放器暂停/控制层遮罩强度：`player_background` 从 `#AA000000` 调整为 `#66000000`，让暂停时显示控制组件仍保持可读，同时减少对视频画面的遮挡。
+
+
+### 2026-07-06
+
+- About page open-source component credits are intentionally collapsed by default behind an "Open source components" toggle. Keep the AboutLibraries data complete, and only change the presentation unless the user explicitly asks to hide or remove credits.

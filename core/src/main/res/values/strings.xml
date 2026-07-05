@@ -121,4 +121,10 @@
     <string name="movie_preview_next">Next preview image</string>
     <string name="movie_summary_expand">Show more</string>
     <string name="movie_summary_collapse">Show less</string>
+    <string name="about_open_source_components">Open source components</string>
+    <string name="about_open_source_components_summary">Tap to view third-party libraries and licenses.</string>
+    <string name="about_open_source_components_count">%1$d components and licenses, tap to view.</string>
+    <string name="about_open_source_components_expanded_summary">Showing third-party libraries and licenses.</string>
+    <string name="about_open_source_components_expand">Show open source components</string>
+    <string name="about_open_source_components_collapse">Hide open source components</string>
 </resources>
