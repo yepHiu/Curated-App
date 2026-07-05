@@ -6,12 +6,12 @@ import org.junit.Test
 
 class PrivacyOverlayStyleTest {
     @Test
-    fun blurScrimUsesHalfOpacityGrayOverlay() {
-        val color = PrivacyOverlayStyle.grayBlurScrimColor()
+    fun blurScrimUsesThirtyPercentBlackOverlay() {
+        val color = PrivacyOverlayStyle.blackBlurScrimColor()
 
-        assertEquals(128, color.alpha)
+        assertEquals(77, color.alpha)
         assertNotEquals(argb(alpha = 128, red = 0, green = 0, blue = 0), color)
-        assertEquals(argb(alpha = 128, red = 128, green = 128, blue = 128), color)
+        assertEquals(argb(alpha = 77, red = 0, green = 0, blue = 0), color)
     }
 
     private val Int.alpha: Int

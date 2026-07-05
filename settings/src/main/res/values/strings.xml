@@ -17,7 +17,7 @@
     <string name="settings_category_network">Network</string>
     <string name="settings_category_privacy">Privacy protection</string>
     <string name="privacy_gaze_protection">Visual protection overlay</string>
-    <string name="privacy_gaze_protection_summary">Blur content behind a 50% gray overlay when opening or leaving the app.</string>
+    <string name="privacy_gaze_protection_summary">Blur content behind a 30% black overlay when opening or leaving the app.</string>
     <string name="privacy_auto_mute">Mute media volume</string>
     <string name="privacy_auto_mute_summary">Set system media volume to zero when the app enters or leaves the foreground.</string>
     <string name="privacy_secure_screen">Block screenshots and previews</string>
