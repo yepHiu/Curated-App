@@ -25,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,6 +54,7 @@ fun SettingsScreen(
     navigateToUsers: () -> Unit,
     navigateToAbout: () -> Unit,
     navigateBack: () -> Unit,
+    bottomContentPadding: Dp = 16.dp,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -93,6 +95,7 @@ fun SettingsScreen(
                 }
             }
         },
+        bottomContentPadding = bottomContentPadding,
     )
 }
 
@@ -101,8 +104,15 @@ fun SettingsScreen(
 private fun SettingsScreenLayout(
     state: SettingsState,
     onAction: (SettingsAction) -> Unit,
+    bottomContentPadding: Dp = 16.dp,
 ) {
-    val contentPadding = PaddingValues(all = MaterialTheme.spacings.default)
+    val contentPadding =
+        PaddingValues(
+            start = MaterialTheme.spacings.default,
+            top = MaterialTheme.spacings.default,
+            end = MaterialTheme.spacings.default,
+            bottom = bottomContentPadding,
+        )
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 

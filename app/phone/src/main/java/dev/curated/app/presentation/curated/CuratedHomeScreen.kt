@@ -50,6 +50,7 @@ fun CuratedHomeScreen(
     onMovieClick: (String) -> Unit,
     onPlayMovie: (String, String) -> Unit,
     onOpenMediaClick: () -> Unit,
+    bottomContentPadding: Dp = 24.dp,
     viewModel: CuratedHomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -61,6 +62,7 @@ fun CuratedHomeScreen(
         onOpenMediaClick = onOpenMediaClick,
         onOpenNavigation = onOpenNavigation,
         onRetryClick = viewModel::loadHome,
+        bottomContentPadding = bottomContentPadding,
     )
 }
 
@@ -72,6 +74,7 @@ private fun CuratedHomeLayout(
     onOpenMediaClick: () -> Unit,
     onOpenNavigation: (() -> Unit)?,
     onRetryClick: () -> Unit,
+    bottomContentPadding: Dp,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
 
@@ -103,7 +106,7 @@ private fun CuratedHomeLayout(
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(22.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = bottomContentPadding),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.heroMovies.isNotEmpty()) {

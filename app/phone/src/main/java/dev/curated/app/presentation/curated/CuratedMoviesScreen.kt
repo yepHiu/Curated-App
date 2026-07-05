@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun CuratedMoviesScreen(
     onOpenNavigation: (() -> Unit)? = null,
     onMovieClick: (String) -> Unit,
+    bottomContentPadding: Dp = 16.dp,
     viewModel: CuratedMoviesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -88,6 +89,7 @@ fun CuratedMoviesScreen(
         onLoadMore = viewModel::loadNextPage,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onOpenNavigation = onOpenNavigation,
+        bottomContentPadding = bottomContentPadding,
     )
 }
 
@@ -99,6 +101,7 @@ private fun CuratedMoviesLayout(
     onLoadMore: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onOpenNavigation: (() -> Unit)?,
+    bottomContentPadding: Dp,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
@@ -157,7 +160,8 @@ private fun CuratedMoviesLayout(
                     state = gridState,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding =
+                        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = bottomContentPadding),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.movies, key = { it.id }) { movie ->

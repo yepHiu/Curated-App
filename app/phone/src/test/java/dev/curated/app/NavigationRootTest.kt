@@ -68,19 +68,45 @@ class NavigationRootTest {
     }
 
     @Test
-    fun curatedNavigationItemsIncludeSettingsForSidebar() {
-        val routes = curatedNavigationItems(isOfflineMode = false).map { it.route::class }
+    fun curatedBottomNavigationItemsOnlyExposePrimaryDestinations() {
+        val routes = curatedBottomNavigationItems().map { it.route::class }
+
+        assertEquals(
+            listOf(HomeRoute::class, MediaRoute::class, SettingsRoute::class),
+            routes,
+        )
+    }
+
+    @Test
+    fun curatedDrawerNavigationItemsOnlyExposeSecondaryDestinations() {
+        val routes = curatedDrawerNavigationItems(isOfflineMode = false).map { it.route::class }
 
         assertEquals(
             listOf(
-                HomeRoute::class,
-                MediaRoute::class,
                 ActorsRoute::class,
                 HistoryRoute::class,
-                SettingsRoute::class,
             ),
             routes,
         )
+    }
+
+    @Test
+    fun curatedFloatingNavigationBarOnlyShowsOnTopLevelAppRoutes() {
+        assertTrue(curatedFloatingNavigationBarVisible(HomeRoute::class.qualifiedName))
+        assertTrue(curatedFloatingNavigationBarVisible(MediaRoute::class.qualifiedName))
+        assertTrue(curatedFloatingNavigationBarVisible(ActorsRoute::class.qualifiedName))
+        assertTrue(curatedFloatingNavigationBarVisible(HistoryRoute::class.qualifiedName))
+        assertTrue(curatedFloatingNavigationBarVisible(SettingsRoute::class.qualifiedName))
+
+        assertFalse(curatedFloatingNavigationBarVisible(MovieRoute::class.qualifiedName))
+        assertFalse(curatedFloatingNavigationBarVisible(WelcomeRoute::class.qualifiedName))
+        assertFalse(curatedFloatingNavigationBarVisible(AboutRoute::class.qualifiedName))
+    }
+
+    @Test
+    fun curatedFloatingNavigationContentPaddingClearsFloatingBar() {
+        assertEquals(104.dp, curatedFloatingNavigationContentBottomPadding(0.dp))
+        assertEquals(128.dp, curatedFloatingNavigationContentBottomPadding(24.dp))
     }
 
     @Test

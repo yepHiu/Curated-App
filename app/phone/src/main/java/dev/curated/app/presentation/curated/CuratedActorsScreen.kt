@@ -47,6 +47,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +62,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun CuratedActorsScreen(
     onOpenNavigation: (() -> Unit)? = null,
     onActorClick: (String) -> Unit,
+    bottomContentPadding: Dp = 16.dp,
     viewModel: CuratedActorsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -72,6 +74,7 @@ fun CuratedActorsScreen(
         onLoadMore = viewModel::loadNextPage,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onOpenNavigation = onOpenNavigation,
+        bottomContentPadding = bottomContentPadding,
     )
 }
 
@@ -83,6 +86,7 @@ private fun CuratedActorsLayout(
     onLoadMore: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onOpenNavigation: (() -> Unit)?,
+    bottomContentPadding: Dp,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
@@ -140,7 +144,8 @@ private fun CuratedActorsLayout(
                     state = gridState,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding =
+                        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = bottomContentPadding),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.actors, key = { it.name }) { actor ->

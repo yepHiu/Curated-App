@@ -161,3 +161,8 @@ Agent 必须主动维护以下文档：
 ### 2026-07-06
 
 - About page open-source component credits are intentionally collapsed by default behind an "Open source components" toggle. Keep the AboutLibraries data complete, and only change the presentation unless the user explicitly asks to hide or remove credits.
+
+
+### 2026-07-06
+
+- Android main navigation now uses a floating bottom pill bar for Home, My media, and Settings. Secondary destinations such as Actors and History remain in the navigation drawer, and top-level scrollable pages reserve bottom content padding so their last content can scroll above the floating bar instead of being obscured.

@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +48,7 @@ import dev.curated.app.presentation.utils.rememberSafePadding
 fun CuratedHistoryScreen(
     onOpenNavigation: (() -> Unit)? = null,
     onPlayMovie: (String, String) -> Unit,
+    bottomContentPadding: Dp = 16.dp,
     viewModel: CuratedHistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -56,6 +58,7 @@ fun CuratedHistoryScreen(
         onOpenNavigation = onOpenNavigation,
         onPlayMovie = onPlayMovie,
         onRetryClick = viewModel::loadHistory,
+        bottomContentPadding = bottomContentPadding,
     )
 }
 
@@ -65,6 +68,7 @@ private fun CuratedHistoryLayout(
     onOpenNavigation: (() -> Unit)?,
     onPlayMovie: (String, String) -> Unit,
     onRetryClick: () -> Unit,
+    bottomContentPadding: Dp,
 ) {
     val safePadding = rememberSafePadding(handleStartInsets = false)
 
@@ -93,7 +97,13 @@ private fun CuratedHistoryLayout(
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
+                    contentPadding =
+                        PaddingValues(
+                            start = 16.dp,
+                            top = 8.dp,
+                            end = 16.dp,
+                            bottom = bottomContentPadding,
+                        ),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.items, key = { it.movie.id }) { item ->

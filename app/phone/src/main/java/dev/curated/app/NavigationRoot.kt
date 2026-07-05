@@ -3,12 +3,21 @@ package dev.curated.app
 import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,14 +30,17 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -175,6 +187,10 @@ val downloadsTab =
         route = DownloadsRoute,
     )
 
+private val CuratedFloatingNavigationBarHeight = 64.dp
+private val CuratedFloatingNavigationBarBottomMargin = 16.dp
+private val CuratedFloatingNavigationContentExtraScrollClearance = 24.dp
+
 @Composable
 fun NavigationRoot(
     navController: NavHostController,
@@ -197,6 +213,15 @@ fun NavigationRoot(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val selectedNavigationRoute = curatedNavigationSelectedRoute(currentRoute)
+    val bottomNavigationVisible = curatedFloatingNavigationBarVisible(currentRoute)
+    val safeDrawingBottom =
+        with(LocalDensity.current) { WindowInsets.safeDrawing.getBottom(this).toDp() }
+    val floatingNavigationContentBottomPadding =
+        if (bottomNavigationVisible) {
+            curatedFloatingNavigationContentBottomPadding(safeDrawingBottom)
+        } else {
+            0.dp
+        }
 
     val windowAdaptiveInfo = currentWindowAdaptiveInfo()
     val navigationLayout =
@@ -207,6 +232,8 @@ fun NavigationRoot(
                 )
         )
     val navigationItems = curatedNavigationItems(isOfflineMode)
+    val bottomNavigationItems = curatedBottomNavigationItems()
+    val drawerNavigationItems = curatedDrawerNavigationItems(isOfflineMode)
     val navigationDrawerEnabled =
         curatedNavigationDrawerEnabled(
             selectedRoute = selectedNavigationRoute,
@@ -327,18 +354,21 @@ fun NavigationRoot(
                         )
                     },
                     onOpenMediaClick = { navController.safeNavigate(MediaRoute) },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
             composable<MediaRoute> {
                 CuratedMoviesScreen(
                     onOpenNavigation = onOpenNavigation,
                     onMovieClick = { movieId -> navController.safeNavigate(MovieRoute(movieId)) },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
             composable<ActorsRoute> {
                 CuratedActorsScreen(
                     onOpenNavigation = onOpenNavigation,
-                    onActorClick = { actorName -> navController.safeNavigate(ActorRoute(actorName)) }
+                    onActorClick = { actorName -> navController.safeNavigate(ActorRoute(actorName)) },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
             composable<ActorRoute> { backStackEntry ->
@@ -366,7 +396,8 @@ fun NavigationRoot(
                                 )
                             }
                         )
-                    }
+                    },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
             composable<DownloadsRoute> {
@@ -493,6 +524,7 @@ fun NavigationRoot(
                     navigateToUsers = {},
                     navigateToAbout = { navController.safeNavigate(AboutRoute) },
                     navigateBack = { navController.safePopBackStack() },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
             composable<AboutRoute> {
@@ -514,14 +546,21 @@ fun NavigationRoot(
                             )
                     ) {
                         CuratedNavigationDrawerContent(
-                            navigationItems = navigationItems,
+                            navigationItems = drawerNavigationItems,
                             selectedRoute = selectedNavigationRoute,
                             onNavigationItemClick = onNavigationItemClick,
                         )
                     }
                 },
             ) {
-                navigationContent()
+                CuratedNavigationContentWithFloatingBar(
+                    showFloatingBar = bottomNavigationVisible,
+                    navigationItems = bottomNavigationItems,
+                    selectedRoute = selectedNavigationRoute,
+                    safeDrawingBottom = safeDrawingBottom,
+                    onNavigationItemClick = onNavigationItemClick,
+                    content = navigationContent,
+                )
             }
         }
         CuratedNavigationLayout.PermanentDrawer -> {
@@ -536,15 +575,125 @@ fun NavigationRoot(
                             )
                     ) {
                         CuratedNavigationDrawerContent(
-                            navigationItems = navigationItems,
+                            navigationItems = drawerNavigationItems,
                             selectedRoute = selectedNavigationRoute,
                             onNavigationItemClick = onNavigationItemClick,
                         )
                     }
                 }
             ) {
-                navigationContent()
+                CuratedNavigationContentWithFloatingBar(
+                    showFloatingBar = bottomNavigationVisible,
+                    navigationItems = bottomNavigationItems,
+                    selectedRoute = selectedNavigationRoute,
+                    safeDrawingBottom = safeDrawingBottom,
+                    onNavigationItemClick = onNavigationItemClick,
+                    content = navigationContent,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun CuratedNavigationContentWithFloatingBar(
+    showFloatingBar: Boolean,
+    navigationItems: List<TabBarItem>,
+    selectedRoute: String?,
+    safeDrawingBottom: androidx.compose.ui.unit.Dp,
+    onNavigationItemClick: (TabBarItem) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
+        if (showFloatingBar) {
+            CuratedFloatingBottomNavigationBar(
+                navigationItems = navigationItems,
+                selectedRoute = selectedRoute,
+                onNavigationItemClick = onNavigationItemClick,
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = safeDrawingBottom + CuratedFloatingNavigationBarBottomMargin,
+                        ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CuratedFloatingBottomNavigationBar(
+    navigationItems: List<TabBarItem>,
+    selectedRoute: String?,
+    onNavigationItemClick: (TabBarItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.wrapContentWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 6.dp,
+        shadowElevation = 12.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+    ) {
+        Row(
+            modifier =
+                Modifier.height(CuratedFloatingNavigationBarHeight)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            navigationItems.forEach { item ->
+                CuratedFloatingBottomNavigationItem(
+                    item = item,
+                    selected = selectedRoute == item.route::class.qualifiedName,
+                    onClick = { onNavigationItemClick(item) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CuratedFloatingBottomNavigationItem(
+    item: TabBarItem,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val containerColor =
+        if (selected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        } else {
+            Color.Transparent
+        }
+    val contentColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Row(
+            modifier = Modifier.height(48.dp).padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(item.icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(text = stringResource(item.title), style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -639,7 +788,28 @@ internal fun curatedStartDestination(
     }
 
 internal fun curatedNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
-    listOf(homeTab, mediaTab, actorsTab, historyTab, settingsTab)
+    curatedBottomNavigationItems() + curatedDrawerNavigationItems(isOfflineMode)
+
+internal fun curatedBottomNavigationItems(): List<TabBarItem> = listOf(homeTab, mediaTab, settingsTab)
+
+internal fun curatedDrawerNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
+    listOf(actorsTab, historyTab)
+
+internal fun curatedFloatingNavigationBarVisible(currentRoute: String?): Boolean =
+    currentRoute in
+        setOf(
+            HomeRoute::class.qualifiedName,
+            MediaRoute::class.qualifiedName,
+            ActorsRoute::class.qualifiedName,
+            HistoryRoute::class.qualifiedName,
+            SettingsRoute::class.qualifiedName,
+        )
+
+internal fun curatedFloatingNavigationContentBottomPadding(safeDrawingBottom: androidx.compose.ui.unit.Dp) =
+    safeDrawingBottom +
+        CuratedFloatingNavigationBarHeight +
+        CuratedFloatingNavigationBarBottomMargin +
+        CuratedFloatingNavigationContentExtraScrollClearance
 
 enum class CuratedNavigationLayout {
     ModalDrawer,
