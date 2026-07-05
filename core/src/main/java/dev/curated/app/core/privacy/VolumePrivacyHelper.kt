@@ -1,56 +1,60 @@
 package dev.curated.app.core.privacy
 
-import android.media.AudioManager
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.scopes.ViewModelScoped
+import android.app.Activity
+import android.app.Application
 import android.content.Context
+import android.media.AudioManager
+import android.os.Bundle
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import timber.log.Timber
 
-/**
- * 音量隐私助手：App 在前台进入 / 后台退出时自动将媒体音量归零。
- *
- * 触发时机：
- * - ProcessLifecycleOwner ON_START（App 进入前台）→ 静音
- * - ProcessLifecycleOwner ON_STOP（App 退到后台）→ 静音
- *
- * 注意：只操作 [AudioManager.STREAM_MUSIC]，不碰铃声音量。
- * 用户播放视频时可以手动调大，退出 App 后自动归零。
- */
 @Singleton
 class VolumePrivacyHelper @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : DefaultLifecycleObserver {
-
+    @param:ApplicationContext private val context: Context,
+) : Application.ActivityLifecycleCallbacks {
     private val audioManager: AudioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val lifecycleTracker =
+        ActivityPrivacyLifecycleTracker(
+            onEnterForeground = { muteMediaVolume() },
+            onExitForeground = { muteMediaVolume() },
+        )
+    private var registered = false
 
-    init {
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        Timber.d("VolumePrivacyHelper registered on ProcessLifecycleOwner")
-    }
+    fun start(application: Application) {
+        if (registered) return
 
-    override fun onStart(owner: LifecycleOwner) {
+        registered = true
+        application.registerActivityLifecycleCallbacks(this)
         muteMediaVolume()
+        Timber.d("VolumePrivacyHelper registered on ActivityLifecycleCallbacks")
     }
 
-    override fun onStop(owner: LifecycleOwner) {
-        muteMediaVolume()
-    }
+    override fun onActivityStarted(activity: Activity) = lifecycleTracker.onActivityStarted()
+
+    override fun onActivityStopped(activity: Activity) = lifecycleTracker.onActivityStopped()
 
     fun muteMediaVolume() {
         runCatching {
             audioManager.setStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 0,
-                0, // no UI, no sound
+                0,
             )
         }.onFailure {
             Timber.w(it, "Failed to mute media volume")
         }
     }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+
+    override fun onActivityResumed(activity: Activity) = Unit
+
+    override fun onActivityPaused(activity: Activity) = Unit
+
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+
+    override fun onActivityDestroyed(activity: Activity) = Unit
 }

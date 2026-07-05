@@ -21,6 +21,7 @@ import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import dagger.hilt.android.HiltAndroidApp
 import dev.curated.app.core.privacy.VolumePrivacyHelper
+import dev.curated.app.presentation.privacy.GazeProtectionCoordinator
 import dev.curated.app.settings.domain.AppPreferences
 import dev.curated.app.work.MpvCleanupWorker
 import dev.curated.app.work.SyncWorker
@@ -40,6 +41,8 @@ class BaseApplication : Application(), Configuration.Provider, SingletonImageLoa
 
     @Inject lateinit var volumePrivacyHelper: VolumePrivacyHelper
 
+    @Inject lateinit var gazeProtectionCoordinator: GazeProtectionCoordinator
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -51,6 +54,8 @@ class BaseApplication : Application(), Configuration.Provider, SingletonImageLoa
         }
 
         AppCompatDelegate.setDefaultNightMode(curatedMvpDefaultNightMode())
+        volumePrivacyHelper.start(this)
+        gazeProtectionCoordinator.start(this)
 
         val workManager = WorkManager.getInstance(applicationContext)
 
