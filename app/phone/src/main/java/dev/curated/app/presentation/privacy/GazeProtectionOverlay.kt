@@ -120,7 +120,7 @@ class GazeProtectionCoordinator @Inject constructor(
                 visibility = if (gate.isActive) View.VISIBLE else View.GONE
                 isClickable = true
                 isFocusable = true
-                setBackgroundColor(PrivacyOverlayStyle.mixedBlurScrimColor())
+                setBackgroundColor(PrivacyOverlayStyle.grayBlurScrimColor())
                 setOnClickListener {
                     if (gate.onTap(System.currentTimeMillis())) {
                         hideOverlay(activity)
