@@ -145,7 +145,7 @@ Agent 必须主动维护以下文档：
 ### 2026-07-05
 
 - 品牌重塑：项目从 Findroid → Curated App，显示名 `app_name` = "Curated App"，Gradle 根项目名 `curated-app`，applicationId + Kotlin 包名 `dev.curated.app`，Compose 主题函数 `CuratedTheme`，XML 主题样式 `Theme.Curated`/`Theme.Curated.Player`。
-- GitHub 仓库 URL 更新为 `https://github.com/wujiahui/curated-droid`。
+- GitHub 仓库 URL 更新为 `https://github.com/yepHiu/Curated-App`，SSH remote 使用 `git@github.com:yepHiu/Curated-App.git`。
 - 旧品牌名 `Findroid`/`findroid`/`dev.jdtech.jellyfin` 已从所有活跃源文件中清除（历史 `doc/` 分析文档中的旧路径保留作为事实记录）。
 - 修复 Android 隐私防护生命周期：不再依赖被 manifest 移除的 AndroidX Startup / `ProcessLifecycleOwner` 初始化链，改用 `ActivityLifecycleCallbacks` 统计 App 前后台边界；静音在进入前台和退到后台时触发，视觉遮挡安装到所有 Activity，覆盖 MainActivity 与播放器页面。
 
@@ -180,3 +180,5 @@ Agent 必须主动维护以下文档：
 - Refined Android floating bottom navigation to be shorter and calmer: the bar height is 58dp, item height is 46dp, dark theme chrome uses Curated `surfaceContainerHigh` instead of inverse/white glass, and selected state uses a lighter primary tint so the control sits more naturally over content.
 
 - Floating bottom navigation now sits closer to the bottom edge with a 10dp bottom margin, uses a background-colored vertical scrim behind the bottom area so content fades naturally under the bar, and moves one shared selected pill with spring animation between equal-width items instead of snapping separate item backgrounds on/off.
+
+- GitHub remote is now `git@github.com:yepHiu/Curated-App.git`, and the root `README.md` was rewritten as a Curated App Android client README that documents the app purpose, setup, repository layout, Curated API contract, privacy protections, visual style, and GPLv3 license.
