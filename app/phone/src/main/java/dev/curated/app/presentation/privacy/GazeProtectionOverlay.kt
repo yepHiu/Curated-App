@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
 import dev.curated.app.core.privacy.ActivityPrivacyLifecycleTracker
+import dev.curated.app.core.privacy.PrivacyPauseOverlayTracker
 import dev.curated.app.core.privacy.PrivacyOverlayGate
 import dev.curated.app.core.privacy.PrivacyOverlayStyle
 import dev.curated.app.settings.domain.AppPreferences
@@ -30,10 +31,14 @@ class GazeProtectionCoordinator @Inject constructor(
     private val activeActivities =
         Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
     private val gates = WeakHashMap<Activity, PrivacyOverlayGate>()
+    private val pauseOverlayTracker = PrivacyPauseOverlayTracker()
     private val lifecycleTracker =
         ActivityPrivacyLifecycleTracker(
             onEnterForeground = { showOverlayOnActiveActivities() },
-            onExitForeground = { showOverlayOnActiveActivities() },
+            onExitForeground = {
+                pauseOverlayTracker.onAppExitedForeground()
+                showOverlayOnActiveActivities()
+            },
         )
     private var registered = false
 
@@ -64,6 +69,7 @@ class GazeProtectionCoordinator @Inject constructor(
     override fun onActivityDestroyed(activity: Activity) {
         activeActivities.remove(activity)
         gates.remove(activity)
+        pauseOverlayTracker.clear(activity)
     }
 
     private fun showOverlayOnActiveActivities() {
@@ -169,11 +175,17 @@ class GazeProtectionCoordinator @Inject constructor(
 
     override fun onActivityResumed(activity: Activity) {
         applySecureScreen(activity)
+        if (!isGazeProtectionEnabled() || pauseOverlayTracker.shouldHideOverlayOnResume(activity)) {
+            hideOverlay(activity)
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {
         applySecureScreen(activity)
         showOverlay(activity)
+        if (isGazeProtectionEnabled()) {
+            pauseOverlayTracker.markOverlayShownForPause(activity)
+        }
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
