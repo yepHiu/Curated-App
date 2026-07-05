@@ -20,6 +20,7 @@ import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import dagger.hilt.android.HiltAndroidApp
+import dev.curated.app.core.privacy.VolumePrivacyHelper
 import dev.curated.app.settings.domain.AppPreferences
 import dev.curated.app.work.MpvCleanupWorker
 import dev.curated.app.work.SyncWorker
@@ -36,6 +37,8 @@ class BaseApplication : Application(), Configuration.Provider, SingletonImageLoa
     @Inject lateinit var curatedHttpClient: OkHttpClient
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject lateinit var volumePrivacyHelper: VolumePrivacyHelper
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()

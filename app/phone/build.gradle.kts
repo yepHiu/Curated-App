@@ -112,6 +112,7 @@ dependencies {
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.media3.datasource.okhttp)
     implementation(libs.androidx.media3.exoplayer)
