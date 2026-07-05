@@ -3,10 +3,14 @@ package dev.curated.app
 import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +18,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -41,6 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
@@ -191,10 +197,15 @@ val downloadsTab =
     )
 
 private val CuratedFloatingNavigationBarHeight = 58.dp
-private val CuratedFloatingNavigationBarBottomMargin = 16.dp
+private val CuratedFloatingNavigationBarBottomMargin = 10.dp
 private val CuratedFloatingNavigationContentExtraScrollClearance = 24.dp
 private val CuratedFloatingNavigationBarMaxWidth = 520.dp
 private val CuratedFloatingNavigationItemHeight = 46.dp
+private val CuratedFloatingNavigationItemSpacing = 4.dp
+private const val CuratedFloatingNavigationBottomScrimTopAlpha = 0f
+private const val CuratedFloatingNavigationBottomScrimBottomAlpha = 0.82f
+private const val CuratedFloatingNavigationSelectionAnimationDampingRatio = 0.82f
+private const val CuratedFloatingNavigationSelectionAnimationStiffness = 420f
 
 @Composable
 fun NavigationRoot(
@@ -612,6 +623,10 @@ private fun CuratedNavigationContentWithFloatingBar(
     Box(modifier = Modifier.fillMaxSize()) {
         content()
         if (showFloatingBar) {
+            CuratedFloatingNavigationBottomScrim(
+                safeDrawingBottom = safeDrawingBottom,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+            )
             CuratedFloatingBottomNavigationBar(
                 navigationItems = navigationItems,
                 selectedRoute = selectedRoute,
@@ -637,7 +652,15 @@ private fun CuratedFloatingBottomNavigationBar(
     onNavigationItemClick: (TabBarItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (navigationItems.isEmpty()) {
+        return
+    }
+
     val colors = curatedFloatingNavigationColors()
+    val selectedIndex =
+        navigationItems
+            .indexOfFirst { item -> selectedRoute == item.route::class.qualifiedName }
+            .coerceAtLeast(0)
 
     Surface(
         modifier = modifier,
@@ -648,21 +671,60 @@ private fun CuratedFloatingBottomNavigationBar(
         shadowElevation = 4.dp,
         border = BorderStroke(1.dp, colors.borderColor),
     ) {
-        Row(
+        BoxWithConstraints(
             modifier =
                 Modifier.height(CuratedFloatingNavigationBarHeight)
                     .padding(horizontal = 6.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            navigationItems.forEach { item ->
-                CuratedFloatingBottomNavigationItem(
-                    item = item,
-                    selected = selectedRoute == item.route::class.qualifiedName,
-                    colors = colors,
-                    onClick = { onNavigationItemClick(item) },
-                    modifier = Modifier.weight(1f),
+            val itemCount = navigationItems.size
+            val itemSpacing = CuratedFloatingNavigationItemSpacing
+            val itemWidth =
+                (maxWidth - itemSpacing * (itemCount - 1).toFloat()) / itemCount.toFloat()
+            val indicatorOffsetTarget =
+                curatedFloatingNavigationSelectionIndicatorOffset(
+                    itemWidth = itemWidth,
+                    itemSpacing = itemSpacing,
+                    selectedIndex = selectedIndex,
                 )
+            val indicatorOffset by
+                animateDpAsState(
+                    targetValue = indicatorOffsetTarget,
+                    animationSpec =
+                        spring(
+                            dampingRatio =
+                                curatedFloatingNavigationSelectionAnimationDampingRatio(),
+                            stiffness = curatedFloatingNavigationSelectionAnimationStiffness(),
+                        ),
+                    label = "CuratedFloatingNavigationSelectionIndicator",
+                )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier =
+                        Modifier.align(Alignment.CenterStart)
+                            .offset(x = indicatorOffset)
+                            .width(itemWidth)
+                            .height(CuratedFloatingNavigationItemHeight),
+                    shape = colors.shape,
+                    color = colors.selectedContainerColor,
+                    contentColor = colors.selectedContentColor,
+                    tonalElevation = 0.dp,
+                ) {}
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    navigationItems.forEach { item ->
+                        CuratedFloatingBottomNavigationItem(
+                            item = item,
+                            selected = selectedRoute == item.route::class.qualifiedName,
+                            colors = colors,
+                            onClick = { onNavigationItemClick(item) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
     }
@@ -680,7 +742,7 @@ private fun CuratedFloatingBottomNavigationItem(
         onClick = onClick,
         modifier = modifier.height(CuratedFloatingNavigationItemHeight),
         shape = colors.shape,
-        color = if (selected) colors.selectedContainerColor else Color.Transparent,
+        color = Color.Transparent,
         contentColor = if (selected) colors.selectedContentColor else colors.unselectedContentColor,
         tonalElevation = 0.dp,
     ) {
@@ -701,6 +763,33 @@ private fun CuratedFloatingBottomNavigationItem(
             )
         }
     }
+}
+
+@Composable
+private fun CuratedFloatingNavigationBottomScrim(
+    safeDrawingBottom: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = MaterialTheme.colorScheme.background
+
+    Box(
+        modifier =
+            modifier
+                .height(curatedFloatingNavigationBottomScrimHeight(safeDrawingBottom))
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                backgroundColor.copy(
+                                    alpha = curatedFloatingNavigationBottomScrimTopAlpha()
+                                ),
+                                backgroundColor.copy(
+                                    alpha = curatedFloatingNavigationBottomScrimBottomAlpha()
+                                ),
+                            )
+                    )
+                )
+    )
 }
 
 private data class CuratedFloatingNavigationColors(
@@ -851,9 +940,35 @@ internal fun curatedFloatingNavigationContentBottomPadding(safeDrawingBottom: an
 
 internal fun curatedFloatingNavigationBarHeight() = CuratedFloatingNavigationBarHeight
 
+internal fun curatedFloatingNavigationBarBottomMargin() = CuratedFloatingNavigationBarBottomMargin
+
 internal fun curatedFloatingNavigationItemHeight() = CuratedFloatingNavigationItemHeight
 
 internal fun curatedFloatingNavigationBarMaxWidth() = CuratedFloatingNavigationBarMaxWidth
+
+internal fun curatedFloatingNavigationBottomScrimHeight(safeDrawingBottom: androidx.compose.ui.unit.Dp) =
+    safeDrawingBottom +
+        CuratedFloatingNavigationBarHeight +
+        CuratedFloatingNavigationBarBottomMargin +
+        CuratedFloatingNavigationContentExtraScrollClearance
+
+internal fun curatedFloatingNavigationBottomScrimTopAlpha() =
+    CuratedFloatingNavigationBottomScrimTopAlpha
+
+internal fun curatedFloatingNavigationBottomScrimBottomAlpha() =
+    CuratedFloatingNavigationBottomScrimBottomAlpha
+
+internal fun curatedFloatingNavigationSelectionIndicatorOffset(
+    itemWidth: androidx.compose.ui.unit.Dp,
+    itemSpacing: androidx.compose.ui.unit.Dp,
+    selectedIndex: Int,
+) = (itemWidth + itemSpacing) * selectedIndex.toFloat()
+
+internal fun curatedFloatingNavigationSelectionAnimationDampingRatio() =
+    CuratedFloatingNavigationSelectionAnimationDampingRatio
+
+internal fun curatedFloatingNavigationSelectionAnimationStiffness() =
+    CuratedFloatingNavigationSelectionAnimationStiffness
 
 internal fun curatedFloatingNavigationContainerBaseColor(surfaceContainerHigh: Color) =
     surfaceContainerHigh

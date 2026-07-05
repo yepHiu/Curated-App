@@ -106,14 +106,15 @@ class NavigationRootTest {
 
     @Test
     fun curatedFloatingNavigationContentPaddingClearsFloatingBar() {
-        assertEquals(98.dp, curatedFloatingNavigationContentBottomPadding(0.dp))
-        assertEquals(122.dp, curatedFloatingNavigationContentBottomPadding(24.dp))
+        assertEquals(92.dp, curatedFloatingNavigationContentBottomPadding(0.dp))
+        assertEquals(116.dp, curatedFloatingNavigationContentBottomPadding(24.dp))
     }
 
     @Test
     fun curatedFloatingNavigationUsesCompactCuratedSurfaceChrome() {
         assertEquals(58.dp, curatedFloatingNavigationBarHeight())
         assertEquals(46.dp, curatedFloatingNavigationItemHeight())
+        assertEquals(10.dp, curatedFloatingNavigationBarBottomMargin())
         assertEquals(520.dp, curatedFloatingNavigationBarMaxWidth())
         assertEquals(0.94f, curatedFloatingNavigationContainerAlpha(isDarkTheme = true))
         assertEquals(0.96f, curatedFloatingNavigationContainerAlpha(isDarkTheme = false))
@@ -136,6 +137,36 @@ class NavigationRootTest {
 
         assertEquals(ColorDark.surfaceContainerHighDark, color)
         assertNotEquals(ColorDark.inverseSurfaceDark, color)
+    }
+
+    @Test
+    fun curatedFloatingNavigationBottomScrimFadesBehindFloatingBar() {
+        assertEquals(92.dp, curatedFloatingNavigationBottomScrimHeight(0.dp))
+        assertEquals(116.dp, curatedFloatingNavigationBottomScrimHeight(24.dp))
+        assertEquals(0f, curatedFloatingNavigationBottomScrimTopAlpha(), 0.001f)
+        assertEquals(0.82f, curatedFloatingNavigationBottomScrimBottomAlpha(), 0.001f)
+    }
+
+    @Test
+    fun curatedFloatingNavigationSelectedIndicatorSlidesBetweenEqualItems() {
+        assertEquals(
+            0.dp,
+            curatedFloatingNavigationSelectionIndicatorOffset(
+                itemWidth = 100.dp,
+                itemSpacing = 4.dp,
+                selectedIndex = 0,
+            ),
+        )
+        assertEquals(
+            104.dp,
+            curatedFloatingNavigationSelectionIndicatorOffset(
+                itemWidth = 100.dp,
+                itemSpacing = 4.dp,
+                selectedIndex = 1,
+            ),
+        )
+        assertEquals(0.82f, curatedFloatingNavigationSelectionAnimationDampingRatio(), 0.001f)
+        assertEquals(420f, curatedFloatingNavigationSelectionAnimationStiffness(), 0.001f)
     }
 
     @Test
