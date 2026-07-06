@@ -48,11 +48,11 @@
 - Android My media 电影卡片会加载 `GET /api/playback/progress` 并在缩略图和标题之间展示历史播放进度小横条；没有有效 duration 或 position 为 0 时不展示。
 - Android `HomeRoute` 使用独立 `CuratedHomeScreen` / `CuratedHomeViewModel`，通过 `GET /api/homepage/recommendations` 读取当天推荐快照，再按 `heroMovieIds` 和 `recommendationMovieIds` 调用 `GET /api/library/movies/{movieId}` 补全影片详情并渲染 Hero 和今日推荐；单个影片详情失败时跳过该卡片。
 - Android `MediaRoute` 使用 `CuratedMoviesScreen` / `CuratedMoviesViewModel` 作为完整电影库，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
-- Android My media 顶部栏使用统一的主页面 Header 槽：左侧显示 `creative` 品牌字标，右侧保留影片搜索入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
+- Android My media 顶部栏使用统一的主页面 Header 槽：左侧显示 `Curated` 品牌字标，右侧保留影片搜索入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
 - Android 影片详情页使用 `MovieDetail.previewImages` 展示横向预览图缩略图，点击缩略图打开全屏图片查看器并支持上一张 / 下一张切换；不要在 Android 端循环请求 `/api/library/movies/{movieId}/asset/preview/{index}` 探测数量。
 - 当前源码中的 `curatedStartPositionMs()` 使用 `resumePositionSec ?: startPositionSec ?: 0.0`，因此影片会优先从后端返回的历史播放位置续播。
 - Curated 底部导航当前展示 `Home`、`My media`、`My`、`Settings`；`My` 页收纳 `Actors` 和 `History`，`DownloadsRoute` 仍保留但不在底部导航展示。
-- Curated 主导航层级页面采用三段式结构：统一高度的顶部 Header 槽、内容区、浮动底部导航。`Home` 和 `My media` 的 Header 左侧显示 `creative` 品牌字标；连接中或断联重连状态应优先在顶部 Header 槽以柔和状态胶囊表达，而不是只在内容区显示红色错误字样。服务器管理入口保留在设置页的 Servers / 服务器设置项中。
+- Curated 主导航层级页面采用三段式结构：统一高度的顶部 Header 槽、内容区、浮动底部导航。`Home` 和 `My media` 的 Header 左侧显示 `Curated` 品牌字标，字标使用 Outfit 字体、品牌主色 `#FE628E`，且不额外显示装饰图标；连接中或断联重连状态应优先在顶部 Header 槽以柔和状态胶囊表达，而不是只在内容区显示红色错误字样。服务器管理入口保留在设置页的 Servers / 服务器设置项中。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
 - Android 隐私防护由 App 自己注册的 `Application.ActivityLifecycleCallbacks` 驱动，不依赖 `ProcessLifecycleOwner`；默认开启系统媒体静音、播放器内部音量归零、30% 黑色模糊视觉遮挡、Android 12+ blur，以及 `FLAG_SECURE` 截图/录屏/最近任务预览保护。
 - Android 隐私防护的播放器内部静音只应在隐私静音状态生效；播放页处于前台时 `Player.volume` 必须恢复为可听音量，避免系统音量已调高但播放器内部仍然无声。系统媒体静音只在 App 进入前台和退到后台的边界触发，不应在 App 内 Activity 切换的 pause 事件中触发。
@@ -61,7 +61,7 @@
 - Android UI 视觉方向是默认深色、内容优先、低干扰媒体库界面、粉色品牌主色。
 - Android Compose 页面顶部栏、返回按钮、标题、筛选栏和首屏主要内容必须主动处理 `WindowInsets.safeDrawing` 或项目 `rememberSafePadding()`，避免与通知栏、挖孔屏或显示裁切区域重叠；不要只写固定顶部间距。
 - Curated 底部导航 / 导航栏 item 的选中态图标和文字必须使用高对比内容色（当前为 `MaterialTheme.colorScheme.onSurface`），不要依赖 Material 默认灰色 token；未选中态可使用 `onSurfaceVariant`。
-- 品牌主色是 `#FE628E`，深色主背景是 `#0D0F1A`，浅色主背景是 `#F4F6FC`。
+- 品牌名是 `Curated`，品牌字标字体是 Outfit，品牌主色是 `#FE628E`，深色主背景是 `#0D0F1A`，浅色主背景是 `#F4F6FC`。
 - Android 首版主题偏好应支持 `dark`、`light`、`system`，默认 `dark`。
 - 主题偏好是设备本地设置，不应与后端账号、PIN 解锁状态绑定。
 - Kotlin / Compose UI 组件中不要散落硬编码 hex，应通过语义 token、`MaterialTheme.colorScheme` 或主题封装使用颜色。
@@ -195,4 +195,4 @@ Agent 必须主动维护以下文档：
 - 底部浮动导航的选中态只保留一个共享移动选中层；tab 自身不要再叠加 Material 默认 press state layer / ripple，避免切换时出现两个半透明薄片同时移动或停留。
 - 修复 Android 播放器横屏右侧音量手势失效：手势系统边缘排除区改用当前播放器视图宽高计算，并补充 `PlayerGestureExclusionPolicyTest` 覆盖横屏右半屏不应被排除、系统边缘仍排除。
 - 增强 Android 播放器横向拖动 seek：通过可测试的手势策略区分横向占优进度拖动与竖向亮度/音量拖动，横向拖动使用进度 HUD 预览目标时间并在松手时提交 seek。
-- 新增 Android 主页面统一顶部 Header：`Home`、`My media`、`My`、`Actors`、`History` 和设置页根/次级页都使用同一安全区感知 Header 槽；`Home` 和 `My media` 左侧显示 `creative` 品牌字标，并在加载或断联时通过顶部状态胶囊显示 `Connecting` / `Reconnecting`，内容区错误状态改为柔和说明和重试按钮。
+- 新增 Android 主页面统一顶部 Header：`Home`、`My media`、`My`、`Actors`、`History` 和设置页根/次级页都使用同一安全区感知 Header 槽；`Home` 和 `My media` 左侧显示 `Curated` 品牌字标，并在加载或断联时通过顶部状态胶囊显示 `Connecting` / `Reconnecting`，内容区错误状态改为柔和说明和重试按钮。后续修正为字标只显示品牌名 `Curated`，使用 Outfit 字体和品牌主色，不显示装饰图标。

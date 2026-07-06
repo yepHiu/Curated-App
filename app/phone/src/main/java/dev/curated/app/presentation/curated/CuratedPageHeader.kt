@@ -24,12 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.curated.app.R as AppR
 import dev.curated.app.core.R as CoreR
 import dev.curated.app.presentation.utils.rememberSafePadding
 
@@ -37,6 +39,8 @@ private val CuratedPageHeaderHorizontalPadding = 16.dp
 private val CuratedPageHeaderTopSpacing = 8.dp
 private val CuratedPageHeaderContentHeight = 56.dp
 private val CuratedPageHeaderBottomSpacing = 8.dp
+private val CuratedBrandFontFamily =
+    FontFamily(Font(AppR.font.outfit_bold, weight = FontWeight.Bold))
 
 internal enum class CuratedPageHeaderStatus {
     Connecting,
@@ -68,38 +72,19 @@ internal fun CuratedPageHeader(
 
 @Composable
 internal fun CuratedBrandWordmark(modifier: Modifier = Modifier) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Text(
+        text = curatedPageHeaderBrandWordmarkText(),
+        style =
+            MaterialTheme.typography.titleLarge.copy(
+                fontFamily = CuratedBrandFontFamily,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp,
+            ),
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = modifier,
-    ) {
-        Surface(
-            modifier = Modifier.size(30.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-            contentColor = MaterialTheme.colorScheme.primary,
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    painter = painterResource(CoreR.drawable.ic_sparkles),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
-        Text(
-            text = curatedPageHeaderBrandWordmarkText(),
-            style =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = FontFamily.SansSerif,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.sp,
-                ),
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    )
 }
 
 @Composable
@@ -218,7 +203,9 @@ internal fun curatedPageHeaderContentHeight(): Dp = CuratedPageHeaderContentHeig
 
 internal fun curatedPageHeaderBottomPadding(): Dp = CuratedPageHeaderBottomSpacing
 
-internal fun curatedPageHeaderBrandWordmarkText(): String = "creative"
+internal fun curatedPageHeaderBrandWordmarkText(): String = "Curated"
+
+internal fun curatedPageHeaderBrandFontName(): String = "Outfit"
 
 internal fun curatedPageHeaderStatusLabel(status: CuratedPageHeaderStatus): String =
     when (status) {
