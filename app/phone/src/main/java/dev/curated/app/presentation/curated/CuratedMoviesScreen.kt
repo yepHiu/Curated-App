@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -58,7 +59,6 @@ import dev.curated.app.core.R as CoreR
 import dev.curated.app.curated.api.MovieListItem
 import dev.curated.app.curated.api.PlaybackProgress
 import dev.curated.app.presentation.utils.GridCellsAdaptiveWithMinColumns
-import dev.curated.app.presentation.utils.rememberSafePadding
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -103,7 +103,6 @@ private fun CuratedMoviesLayout(
     onOpenNavigation: (() -> Unit)?,
     bottomContentPadding: Dp,
 ) {
-    val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
 
     LaunchedEffect(gridState, state.movies.size, state.canLoadMore, state.appendErrorMessage) {
@@ -130,14 +129,7 @@ private fun CuratedMoviesLayout(
             state = state,
             onSearchQueryChange = onSearchQueryChange,
             onOpenNavigation = onOpenNavigation,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        top = curatedMoviesHeaderTopPadding(safePadding.top),
-                        end = 16.dp,
-                        bottom = 8.dp,
-                    ),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         when {
@@ -147,7 +139,10 @@ private fun CuratedMoviesLayout(
                 }
             }
             state.errorMessage != null -> {
-                CuratedErrorState(message = state.errorMessage, onRetryClick = onRetryClick)
+                CuratedConnectionErrorState(
+                    message = state.errorMessage,
+                    onRetryClick = onRetryClick,
+                )
             }
             state.movies.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -208,7 +203,7 @@ private fun CuratedMoviesHeader(
         }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+    CuratedPageHeader(modifier = modifier) {
         if (showSearch) {
             IconButton(
                 onClick = {
@@ -249,7 +244,11 @@ private fun CuratedMoviesHeader(
                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
             )
         } else {
-            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
+            CuratedBrandWordmark()
+            curatedMoviesPageHeaderStatus(state)?.let { status ->
+                Spacer(modifier = Modifier.width(12.dp))
+                CuratedPageHeaderStatusChip(status = status)
+            }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { searchActive = true }) {
                 Icon(
@@ -257,6 +256,7 @@ private fun CuratedMoviesHeader(
                     contentDescription = actionContentDescriptions[0],
                 )
             }
+            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
         }
     }
 }
@@ -341,7 +341,15 @@ internal fun curatedMovieCardProgressFraction(progress: PlaybackProgress?): Floa
     return (progress.positionSec / durationSec).toFloat().coerceIn(0f, 1f)
 }
 
-internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
+internal fun curatedMoviesHeaderTopPadding(safeDrawingTop: Dp): Dp =
+    curatedPageHeaderTopPadding(safeDrawingTop)
+
+internal fun curatedMoviesPageHeaderStatus(state: CuratedMoviesState): CuratedPageHeaderStatus? =
+    when {
+        state.isLoading -> CuratedPageHeaderStatus.Connecting
+        state.errorMessage != null -> CuratedPageHeaderStatus.Reconnecting
+        else -> null
+    }
 
 internal fun curatedMoviesHeaderSubtitle(total: Int): String = "Movie library"
 
@@ -397,18 +405,5 @@ private fun CuratedMoviesLoadMoreFooter(
                 Button(onClick = onRetryClick) { Text("Retry") }
             }
         }
-    }
-}
-
-@Composable
-private fun CuratedErrorState(message: String, onRetryClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-    ) {
-        Text(text = message, color = MaterialTheme.colorScheme.error)
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onRetryClick) { Text("Retry") }
     }
 }

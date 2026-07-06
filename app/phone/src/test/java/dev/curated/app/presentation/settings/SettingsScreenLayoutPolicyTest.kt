@@ -14,7 +14,7 @@ class SettingsScreenLayoutPolicyTest {
 
         assertTrue(source.contains("onOpenNavigation: (() -> Unit)? = null"))
         assertTrue(source.contains("internal fun isSettingsRootRoute("))
-        assertTrue(source.contains("rememberSafePadding(handleStartInsets = false)"))
+        assertTrue(source.contains("CuratedPageHeader("))
         assertTrue(source.contains("CuratedNavigationMenuButton(onClick = it)"))
         assertTrue(source.contains("onAction(SettingsAction.OnBackClick)"))
         assertFalse(source.contains("Scaffold("))

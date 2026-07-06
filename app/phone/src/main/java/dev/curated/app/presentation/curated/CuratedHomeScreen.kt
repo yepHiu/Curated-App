@@ -42,7 +42,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.curated.app.core.R as CoreR
 import dev.curated.app.curated.api.MovieDetail
-import dev.curated.app.presentation.utils.rememberSafePadding
 
 @Composable
 fun CuratedHomeScreen(
@@ -76,19 +75,11 @@ private fun CuratedHomeLayout(
     onRetryClick: () -> Unit,
     bottomContentPadding: Dp,
 ) {
-    val safePadding = rememberSafePadding(handleStartInsets = false)
-
     Column(modifier = Modifier.fillMaxSize()) {
         CuratedHomeHeader(
+            state = state,
             onOpenNavigation = onOpenNavigation,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        top = curatedHomeHeaderTopPadding(safePadding.top),
-                        end = 16.dp,
-                        bottom = 8.dp,
-                    ),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         when {
@@ -98,7 +89,10 @@ private fun CuratedHomeLayout(
                 }
             }
             state.errorMessage != null -> {
-                CuratedHomeErrorState(message = state.errorMessage, onRetryClick = onRetryClick)
+                CuratedConnectionErrorState(
+                    message = state.errorMessage,
+                    onRetryClick = onRetryClick,
+                )
             }
             state.isEmpty -> {
                 CuratedHomeEmptyState(onOpenMediaClick = onOpenMediaClick)
@@ -134,10 +128,17 @@ private fun CuratedHomeLayout(
 
 @Composable
 private fun CuratedHomeHeader(
+    state: CuratedHomeState,
     onOpenNavigation: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+    CuratedPageHeader(modifier = modifier) {
+        CuratedBrandWordmark()
+        curatedHomePageHeaderStatus(state)?.let { status ->
+            Spacer(modifier = Modifier.width(12.dp))
+            CuratedPageHeaderStatusChip(status = status)
+        }
+        Spacer(modifier = Modifier.weight(1f))
         onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
     }
 }
@@ -353,20 +354,15 @@ private fun CuratedHomeEmptyState(onOpenMediaClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun CuratedHomeErrorState(message: String, onRetryClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-    ) {
-        Text(text = message, color = MaterialTheme.colorScheme.error)
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onRetryClick) { Text(stringResource(CoreR.string.retry)) }
-    }
-}
+internal fun curatedHomeHeaderTopPadding(safeDrawingTop: Dp): Dp =
+    curatedPageHeaderTopPadding(safeDrawingTop)
 
-internal fun curatedHomeHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
+internal fun curatedHomePageHeaderStatus(state: CuratedHomeState): CuratedPageHeaderStatus? =
+    when {
+        state.isLoading -> CuratedPageHeaderStatus.Connecting
+        state.errorMessage != null -> CuratedPageHeaderStatus.Reconnecting
+        else -> null
+    }
 
 internal fun curatedHomeHeroImageUrl(movie: MovieDetail): String? = movie.coverUrl ?: movie.thumbUrl
 

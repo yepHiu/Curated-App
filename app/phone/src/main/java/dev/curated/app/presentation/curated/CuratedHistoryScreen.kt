@@ -42,7 +42,6 @@ import coil3.compose.AsyncImage
 import dev.curated.app.core.R as CoreR
 import dev.curated.app.curated.api.MovieDetail
 import dev.curated.app.curated.api.PlaybackProgress
-import dev.curated.app.presentation.utils.rememberSafePadding
 
 @Composable
 fun CuratedHistoryScreen(
@@ -70,15 +69,12 @@ private fun CuratedHistoryLayout(
     onRetryClick: () -> Unit,
     bottomContentPadding: Dp,
 ) {
-    val safePadding = rememberSafePadding(handleStartInsets = false)
-
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(start = 16.dp, top = safePadding.top + 8.dp, end = 16.dp, bottom = 8.dp)
-        ) {
+        CuratedPageHeader(modifier = Modifier.fillMaxWidth()) {
+            CuratedPageHeaderTitle(
+                text = stringResource(CoreR.string.title_history),
+                modifier = Modifier.weight(1f),
+            )
             onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
         }
 

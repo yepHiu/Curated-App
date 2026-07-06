@@ -4,10 +4,10 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -28,10 +29,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.curated.app.core.R as CoreR
 import dev.curated.app.presentation.curated.CuratedNavigationMenuButton
+import dev.curated.app.presentation.curated.CuratedPageHeader
+import dev.curated.app.presentation.curated.CuratedPageHeaderTitle
+import dev.curated.app.presentation.curated.curatedPageHeaderTopPadding
 import dev.curated.app.presentation.settings.components.SettingsGroupCard
 import dev.curated.app.presentation.theme.CuratedTheme
 import dev.curated.app.presentation.theme.spacings
-import dev.curated.app.presentation.utils.rememberSafePadding
 import dev.curated.app.settings.R as SettingsR
 import dev.curated.app.settings.presentation.enums.DeviceType
 import dev.curated.app.settings.presentation.models.PreferenceCategory
@@ -108,7 +111,6 @@ private fun SettingsScreenLayout(
     onOpenNavigation: (() -> Unit)? = null,
     bottomContentPadding: Dp = 16.dp,
 ) {
-    val safePadding = rememberSafePadding(handleStartInsets = false)
     val contentPadding =
         PaddingValues(
             start = MaterialTheme.spacings.default,
@@ -122,14 +124,7 @@ private fun SettingsScreenLayout(
             isRootRoute = isRootRoute,
             onOpenNavigation = onOpenNavigation,
             onBackClick = { onAction(SettingsAction.OnBackClick) },
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(
-                        start = MaterialTheme.spacings.default,
-                        top = curatedSettingsHeaderTopPadding(safePadding.top),
-                        end = MaterialTheme.spacings.default,
-                        bottom = MaterialTheme.spacings.small,
-                    ),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         LazyColumn(
@@ -156,8 +151,12 @@ private fun SettingsHeader(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+    CuratedPageHeader(modifier = modifier) {
         if (isRootRoute) {
+            CuratedPageHeaderTitle(
+                text = stringResource(CoreR.string.title_settings),
+                modifier = Modifier.weight(1f),
+            )
             onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
         } else {
             IconButton(onClick = onBackClick) {
@@ -166,6 +165,11 @@ private fun SettingsHeader(
                     contentDescription = null,
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            CuratedPageHeaderTitle(
+                text = stringResource(CoreR.string.title_settings),
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
@@ -173,7 +177,8 @@ private fun SettingsHeader(
 internal fun isSettingsRootRoute(indexes: IntArray): Boolean =
     indexes.isEmpty() || indexes.contentEquals(intArrayOf(CoreR.string.title_settings))
 
-internal fun curatedSettingsHeaderTopPadding(safeDrawingTop: Dp): Dp = safeDrawingTop + 8.dp
+internal fun curatedSettingsHeaderTopPadding(safeDrawingTop: Dp): Dp =
+    curatedPageHeaderTopPadding(safeDrawingTop)
 
 @PreviewScreenSizes
 @Composable

@@ -53,6 +53,17 @@ class CuratedHomeLayoutTest {
         }
     }
 
+    @Test
+    fun homeUsesSharedTopHeaderWithBrandAndConnectionStatus() {
+        val source =
+            projectFile("src/main/java/dev/curated/app/presentation/curated/CuratedHomeScreen.kt")
+                .readText()
+
+        assertTrue(source.contains("CuratedPageHeader("))
+        assertTrue(source.contains("CuratedBrandWordmark("))
+        assertTrue(source.contains("curatedHomePageHeaderStatus(state)"))
+    }
+
     private fun movieDetail(coverUrl: String?, thumbUrl: String?): MovieDetail =
         MovieDetail(
             id = "movie-1",

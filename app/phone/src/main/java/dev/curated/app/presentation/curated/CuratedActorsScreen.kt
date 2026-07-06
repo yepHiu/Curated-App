@@ -55,7 +55,6 @@ import coil3.compose.AsyncImage
 import dev.curated.app.core.R as CoreR
 import dev.curated.app.curated.api.ActorListItem
 import dev.curated.app.presentation.utils.GridCellsAdaptiveWithMinColumns
-import dev.curated.app.presentation.utils.rememberSafePadding
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -88,7 +87,6 @@ private fun CuratedActorsLayout(
     onOpenNavigation: (() -> Unit)?,
     bottomContentPadding: Dp,
 ) {
-    val safePadding = rememberSafePadding(handleStartInsets = false)
     val gridState = rememberLazyGridState()
 
     LaunchedEffect(gridState, state.actors.size, state.canLoadMore, state.appendErrorMessage) {
@@ -114,14 +112,7 @@ private fun CuratedActorsLayout(
             state = state,
             onSearchQueryChange = onSearchQueryChange,
             onOpenNavigation = onOpenNavigation,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        top = safePadding.top + 8.dp,
-                        end = 16.dp,
-                        bottom = 8.dp,
-                    ),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         when {
@@ -190,7 +181,7 @@ private fun CuratedActorsHeader(
         }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+    CuratedPageHeader(modifier = modifier) {
         if (showSearch) {
             IconButton(
                 onClick = {
@@ -231,14 +222,17 @@ private fun CuratedActorsHeader(
                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
             )
         } else {
-            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
-            Spacer(modifier = Modifier.weight(1f))
+            CuratedPageHeaderTitle(
+                text = stringResource(CoreR.string.title_actors),
+                modifier = Modifier.weight(1f),
+            )
             IconButton(onClick = { searchActive = true }) {
                 Icon(
                     painter = painterResource(CoreR.drawable.ic_search),
                     contentDescription = "Search",
                 )
             }
+            onOpenNavigation?.let { CuratedNavigationMenuButton(onClick = it) }
         }
     }
 }
