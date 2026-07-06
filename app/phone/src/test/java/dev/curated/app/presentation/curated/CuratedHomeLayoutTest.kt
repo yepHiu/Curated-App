@@ -2,7 +2,10 @@ package dev.curated.app.presentation.curated
 
 import androidx.compose.ui.unit.dp
 import dev.curated.app.curated.api.MovieDetail
+import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CuratedHomeLayoutTest {
@@ -36,6 +39,20 @@ class CuratedHomeLayoutTest {
         )
     }
 
+    @Test
+    fun homeCardTitlesStaySingleLine() {
+        val source =
+            projectFile("src/main/java/dev/curated/app/presentation/curated/CuratedHomeScreen.kt")
+                .readText()
+
+        listOf("CuratedHomeHeroCard", "CuratedHomeRecommendationCard").forEach { functionName ->
+            val titleBlock = source.titleTextBlock(functionName)
+
+            assertTrue("$functionName title should be single line", titleBlock.contains("maxLines = 1"))
+            assertFalse("$functionName title should not wrap to two lines", titleBlock.contains("maxLines = 2"))
+        }
+    }
+
     private fun movieDetail(coverUrl: String?, thumbUrl: String?): MovieDetail =
         MovieDetail(
             id = "movie-1",
@@ -63,4 +80,15 @@ class CuratedHomeLayoutTest {
             userRating = null,
             actorAvatarUrls = emptyMap(),
         )
+
+    private fun String.titleTextBlock(functionName: String): String =
+        substringAfter("private fun $functionName")
+            .substringAfter("text = movie.title,")
+            .substringBefore(")")
+
+    private fun projectFile(relativePath: String): File {
+        val candidates = listOf(File(relativePath), File("app/phone", relativePath))
+        return candidates.firstOrNull { it.exists() }
+            ?: error("Could not find $relativePath from ${File(".").absoluteFile.normalize().path}")
+    }
 }

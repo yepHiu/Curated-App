@@ -185,7 +185,7 @@ private fun CuratedHomeHeroCard(
                 text = movie.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -271,7 +271,7 @@ private fun CuratedHomeRecommendationCard(
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.titleSmall,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(4.dp))
