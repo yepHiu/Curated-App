@@ -2,7 +2,7 @@
 
 本文件是 Curated App 项目的 agent 记忆索引。它记录后续 agent 应主动继承和维护的长期事实、规则和变更线索。
 
-更新时间：2026-07-06
+更新时间：2026-07-07
 维护者：agent
 
 ## 事实源
@@ -40,6 +40,8 @@
 - `PlayerActivity` 和 `CuratedPlayerActivity` 的播放控制条不展示音频轨道设置和字幕轨道设置入口。
 - 播放页竖屏中间控制按钮必须保持紧凑并几何居中：`exo_main_controls.xml` 中心行应占满父宽、使用 `android:gravity="center"`，按钮间距保持左右对称的 `8dp`，按钮自身保留 `16dp` padding 以维持触控面积。
 - 播放页控制层背景使用 `player_background = #66000000`，即约 40% 黑色遮罩；不要把暂停/控制层显示时的普通播放器 HUD 调回高不透明度，以免视频画面被过度遮挡。隐私保护遮罩是独立机制，不应与播放器控制层背景混用。
+- Android 播放器手势排除区必须基于当前 `PlayerView` 实际宽高计算，不能使用 `Resources.getSystem().displayMetrics` 作为横竖屏边界；否则横屏时右半屏可能被误判为系统手势区，导致右侧音量竖滑失效。
+- Android 播放器单指拖动规则：远离系统手势边缘时，横向占优拖动进入进度预览并在松手时 seek，竖向占优拖动保留左半屏亮度、右半屏系统媒体音量调节。
 - 当前 Curated 播放器已实现 progress 回写：播放中约每 10 秒、暂停/停止播放和播放结束时调用 `PUT /api/playback/progress/{movieId}`，写入失败只记录日志，不中断播放。
 - 当前 Curated 播放闭环尚未实现 HLS session delete、played movies、watch time 统计和 direct 到 HLS 的显式 fallback。
 - Android 观看历史入口位于底部导航 `History` tab，使用 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
@@ -182,3 +184,8 @@ Agent 必须主动维护以下文档：
 - Floating bottom navigation now sits closer to the bottom edge with a 10dp bottom margin, uses a background-colored vertical scrim behind the bottom area so content fades naturally under the bar, and moves one shared selected pill with spring animation between equal-width items instead of snapping separate item backgrounds on/off.
 
 - GitHub remote is now `git@github.com:yepHiu/Curated-App.git`, and the root `README.md` was rewritten as a Curated App Android client README that documents the app purpose, setup, repository layout, Curated API contract, privacy protections, visual style, and GPLv3 license.
+
+### 2026-07-07
+
+- 修复 Android 播放器横屏右侧音量手势失效：手势系统边缘排除区改用当前播放器视图宽高计算，并补充 `PlayerGestureExclusionPolicyTest` 覆盖横屏右半屏不应被排除、系统边缘仍排除。
+- 增强 Android 播放器横向拖动 seek：通过可测试的手势策略区分横向占优进度拖动与竖向亮度/音量拖动，横向拖动使用进度 HUD 预览目标时间并在松手时提交 seek。

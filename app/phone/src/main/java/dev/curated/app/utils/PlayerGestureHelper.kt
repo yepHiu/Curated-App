@@ -1,7 +1,6 @@
 package dev.curated.app.utils
 
 import android.annotation.SuppressLint
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.media.AudioManager
 import android.os.Build
@@ -56,6 +55,7 @@ class PlayerGestureHelper(
     private var swipeGestureValueTrackerVolume = -1f
     private var swipeGestureValueTrackerBrightness = -1f
     private var swipeGestureValueTrackerProgress = -1L
+    private var swipeGestureStartPosition = -1L
 
     private var swipeGestureVolumeOpen = false
     private var swipeGestureBrightnessOpen = false
@@ -65,9 +65,6 @@ class PlayerGestureHelper(
 
     private var playbackSpeedIncrease: Float = 2f
     private var lastPlaybackSpeed: Float = 0f
-
-    private val screenWidth = Resources.getSystem().displayMetrics.widthPixels
-    private val screenHeight = Resources.getSystem().displayMetrics.heightPixels
 
     var currentTrickplay: Trickplay? = null
     private val trickplayRoundedCorners = RoundedCornersTransformation(10f)
@@ -263,46 +260,53 @@ class PlayerGestureHelper(
                     // Disables seek gestures if view is locked
                     if (isControlsLocked) return false
 
-                    // Check whether swipe was oriented vertically
-                    if (abs(distanceY / distanceX) < 2) {
-                        return if (
-                            (abs(currentEvent.x - firstEvent.x) > 50 || swipeGestureProgressOpen) &&
-                                !swipeGestureBrightnessOpen &&
-                                !swipeGestureVolumeOpen &&
-                                (SystemClock.elapsedRealtime() - lastScaleEvent) > 200
-                        ) {
-                            val currentPos = playerView.player?.currentPosition ?: 0
-                            val vidDuration = (playerView.player?.duration ?: 0).coerceAtLeast(0)
+                    val deltaX = currentEvent.x - firstEvent.x
+                    val deltaY = currentEvent.y - firstEvent.y
+                    val dragIntent =
+                        detectPlayerDragGestureIntent(
+                            deltaX = deltaX,
+                            deltaY = deltaY,
+                            thresholdPx = 50f,
+                        )
 
-                            val difference = ((currentEvent.x - firstEvent.x) * 90).toLong()
-                            val newPos = (currentPos + difference).coerceIn(0, vidDuration)
-
-                            host.playerGestureBinding.progressScrubberLayout.visibility =
-                                View.VISIBLE
-                            host.playerGestureBinding.progressScrubberText.text =
-                                "${longToTimestamp(difference)} [${longToTimestamp(newPos, true)}]"
-                            swipeGestureValueTrackerProgress = newPos
-
-                            if (
-                                appPreferences.getValue(appPreferences.playerGesturesSeekTrickplay)
-                            ) {
-                                if (currentTrickplay != null) {
-                                    host.playerGestureBinding.progressScrubberTrickplay.visibility =
-                                        View.VISIBLE
-                                    updateTrickplayImage(newPos)
-                                } else {
-                                    host.playerGestureBinding.progressScrubberTrickplay.visibility =
-                                        View.GONE
-                                }
-                            }
-
-                            swipeGestureProgressOpen = true
-                            true
-                        } else {
-                            false
+                    return if (
+                        (dragIntent == PlayerDragGestureIntent.HorizontalSeek ||
+                            swipeGestureProgressOpen) &&
+                            !swipeGestureBrightnessOpen &&
+                            !swipeGestureVolumeOpen &&
+                            (SystemClock.elapsedRealtime() - lastScaleEvent) > 200
+                    ) {
+                        if (swipeGestureStartPosition < 0) {
+                            swipeGestureStartPosition = playerView.player?.currentPosition ?: 0
                         }
+                        val preview =
+                            calculatePlayerDragSeekPreview(
+                                startPositionMs = swipeGestureStartPosition,
+                                durationMs = playerView.player?.duration ?: 0,
+                                deltaX = deltaX,
+                            )
+
+                        host.playerGestureBinding.progressScrubberLayout.visibility = View.VISIBLE
+                        host.playerGestureBinding.progressScrubberText.text =
+                            "${longToTimestamp(preview.offsetMs)} [${longToTimestamp(preview.targetPositionMs, true)}]"
+                        swipeGestureValueTrackerProgress = preview.targetPositionMs
+
+                        if (appPreferences.getValue(appPreferences.playerGesturesSeekTrickplay)) {
+                            if (currentTrickplay != null) {
+                                host.playerGestureBinding.progressScrubberTrickplay.visibility =
+                                    View.VISIBLE
+                                updateTrickplayImage(preview.targetPositionMs)
+                            } else {
+                                host.playerGestureBinding.progressScrubberTrickplay.visibility =
+                                    View.GONE
+                            }
+                        }
+
+                        swipeGestureProgressOpen = true
+                        true
+                    } else {
+                        false
                     }
-                    return true
                 }
             },
         )
@@ -324,7 +328,17 @@ class PlayerGestureHelper(
                     // Disables volume gestures when player is locked
                     if (isControlsLocked) return false
 
-                    if (abs(distanceY / distanceX) < 2) return false
+                    val verticalGestureOpen =
+                        swipeGestureBrightnessOpen || swipeGestureVolumeOpen
+                    if (!verticalGestureOpen) {
+                        val dragIntent =
+                            detectPlayerDragGestureIntent(
+                                deltaX = currentEvent.x - firstEvent.x,
+                                deltaY = currentEvent.y - firstEvent.y,
+                                thresholdPx = 50f,
+                            )
+                        if (dragIntent != PlayerDragGestureIntent.VerticalAdjustment) return false
+                    }
 
                     if (swipeGestureValueTrackerProgress > -1 || swipeGestureProgressOpen) {
                         return false
@@ -504,6 +518,7 @@ class PlayerGestureHelper(
                     swipeGestureProgressOpen = false
 
                     swipeGestureValueTrackerProgress = -1L
+                    swipeGestureStartPosition = -1L
                 }
             }
             currentNumberOfPointers = 0
@@ -533,34 +548,49 @@ class PlayerGestureHelper(
 
     /** Check if [firstEvent] is in the gesture exclusion area */
     private fun inExclusionArea(firstEvent: MotionEvent): Boolean {
+        val fallbackHorizontalInset =
+            playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_HORIZONTAL)
+        val fallbackVerticalInset =
+            playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_VERTICAL)
+        val viewWidth =
+            playerView.width
+                .takeIf { it > 0 }
+                ?: playerView.measuredWidth.takeIf { it > 0 }
+                ?: playerView.resources.displayMetrics.widthPixels
+        val viewHeight =
+            playerView.height
+                .takeIf { it > 0 }
+                ?: playerView.measuredHeight.takeIf { it > 0 }
+                ?: playerView.resources.displayMetrics.heightPixels
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val insets =
-                playerView.rootWindowInsets.getInsetsIgnoringVisibility(
+                playerView.rootWindowInsets?.getInsetsIgnoringVisibility(
                     WindowInsets.Type.systemGestures()
                 )
 
-            if (
-                (firstEvent.x < insets.left) ||
-                    (firstEvent.x > (screenWidth - insets.right)) ||
-                    (firstEvent.y < insets.top) ||
-                    (firstEvent.y > (screenHeight - insets.bottom))
-            ) {
-                return true
-            }
-        } else if (
-            firstEvent.y < playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_VERTICAL) ||
-                firstEvent.y >
-                    screenHeight -
-                        playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_VERTICAL) ||
-                firstEvent.x <
-                    playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_HORIZONTAL) ||
-                firstEvent.x >
-                    screenWidth -
-                        playerView.resources.dip(Constants.GESTURE_EXCLUSION_AREA_HORIZONTAL)
-        ) {
-            return true
+            return isGestureStartInSystemGestureExclusionArea(
+                startX = firstEvent.x,
+                startY = firstEvent.y,
+                viewWidth = viewWidth,
+                viewHeight = viewHeight,
+                leftInset = insets?.left ?: fallbackHorizontalInset,
+                topInset = insets?.top ?: fallbackVerticalInset,
+                rightInset = insets?.right ?: fallbackHorizontalInset,
+                bottomInset = insets?.bottom ?: fallbackVerticalInset,
+            )
         }
-        return false
+
+        return isGestureStartInSystemGestureExclusionArea(
+            startX = firstEvent.x,
+            startY = firstEvent.y,
+            viewWidth = viewWidth,
+            viewHeight = viewHeight,
+            leftInset = fallbackHorizontalInset,
+            topInset = fallbackVerticalInset,
+            rightInset = fallbackHorizontalInset,
+            bottomInset = fallbackVerticalInset,
+        )
     }
 
     fun updateTrickplayImage(position: Long) {

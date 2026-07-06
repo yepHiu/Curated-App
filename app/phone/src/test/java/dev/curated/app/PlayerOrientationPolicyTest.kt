@@ -25,8 +25,8 @@ class PlayerOrientationPolicyTest {
     fun playerUnlockRestoresSensorOrientationInsteadOfLandscapeOnlyOrientation() {
         val activitySources =
             listOf(
-                "src/main/java/dev/jdtech/jellyfin/PlayerActivity.kt",
-                "src/main/java/dev/jdtech/jellyfin/CuratedPlayerActivity.kt",
+                "src/main/java/dev/curated/app/PlayerActivity.kt",
+                "src/main/java/dev/curated/app/CuratedPlayerActivity.kt",
             )
 
         activitySources.forEach { path ->
