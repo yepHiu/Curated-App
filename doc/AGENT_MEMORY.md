@@ -44,14 +44,14 @@
 - Android 播放器单指拖动规则：远离系统手势边缘时，横向占优拖动进入进度预览并在松手时 seek，竖向占优拖动保留左半屏亮度、右半屏系统媒体音量调节。
 - 当前 Curated 播放器已实现 progress 回写：播放中约每 10 秒、暂停/停止播放和播放结束时调用 `PUT /api/playback/progress/{movieId}`，写入失败只记录日志，不中断播放。
 - 当前 Curated 播放闭环尚未实现 HLS session delete、played movies、watch time 统计和 direct 到 HLS 的显式 fallback。
-- Android 观看历史入口位于底部导航 `History` tab，使用 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
+- Android 观看历史入口位于底部导航 `My` 页下的 `History` 入口，使用 `GET /api/playback/progress` 作为数据源，按 `updatedAt` 倒序展示，并调用 `GET /api/library/movies/{movieId}` 补全标题、封面和元数据；电影详情补全使用有上限并发请求，单条详情失败时跳过该行，进度列表失败时显示页面错误和重试；历史卡片点击后直接启动 `CuratedPlayerActivity` 播放，不进入电影详情页。
 - Android My media 电影卡片会加载 `GET /api/playback/progress` 并在缩略图和标题之间展示历史播放进度小横条；没有有效 duration 或 position 为 0 时不展示。
 - Android `HomeRoute` 使用独立 `CuratedHomeScreen` / `CuratedHomeViewModel`，通过 `GET /api/homepage/recommendations` 读取当天推荐快照，再按 `heroMovieIds` 和 `recommendationMovieIds` 调用 `GET /api/library/movies/{movieId}` 补全影片详情并渲染 Hero 和今日推荐；单个影片详情失败时跳过该卡片。
 - Android `MediaRoute` 使用 `CuratedMoviesScreen` / `CuratedMoviesViewModel` 作为完整电影库，电影列表通过 `GET /api/library/movies?limit=50&offset=N` 按滚动位置分页加载；不要通过单次提高 limit 来假装完整列表。
 - Android My media 顶部栏包含搜索入口和设置入口；当前搜索能力仅限影片，使用现有 `GET /api/library/movies?q=<query>&limit=50&offset=N`，搜索结果继续按滚动位置分页加载。
 - Android 影片详情页使用 `MovieDetail.previewImages` 展示横向预览图缩略图，点击缩略图打开全屏图片查看器并支持上一张 / 下一张切换；不要在 Android 端循环请求 `/api/library/movies/{movieId}/asset/preview/{index}` 探测数量。
 - 当前源码中的 `curatedStartPositionMs()` 使用 `resumePositionSec ?: startPositionSec ?: 0.0`，因此影片会优先从后端返回的历史播放位置续播。
-- Curated 底部导航当前展示 `Home`、`My media`、`History`；`DownloadsRoute` 仍保留但不在底部导航展示。
+- Curated 底部导航当前展示 `Home`、`My media`、`My`、`Settings`；`My` 页收纳 `Actors` 和 `History`，`DownloadsRoute` 仍保留但不在底部导航展示。
 - Curated 首页顶部栏保留设置入口，My media 顶部栏保留搜索和设置入口，二者都不再直接展示服务器入口；服务器管理入口保留在设置页的 Servers / 服务器设置项中。
 - Curated 设置页不展示偏好音频语言、偏好字幕语言、界面分类、进度条预览图 / trickplay 相关设置；“显示额外信息”开关保留并直接显示在设置根页。
 - Android 隐私防护由 App 自己注册的 `Application.ActivityLifecycleCallbacks` 驱动，不依赖 `ProcessLifecycleOwner`；默认开启系统媒体静音、播放器内部音量归零、30% 黑色模糊视觉遮挡、Android 12+ blur，以及 `FLAG_SECURE` 截图/录屏/最近任务预览保护。
@@ -167,7 +167,7 @@ Agent 必须主动维护以下文档：
 
 ### 2026-07-06
 
-- Android main navigation now uses a floating bottom pill bar for Home, My media, and Settings. Secondary destinations such as Actors and History remain in the navigation drawer, and top-level scrollable pages reserve bottom content padding so their last content can scroll above the floating bar instead of being obscured.
+- Android main navigation now uses a floating bottom pill bar for Home, My media, My, and Settings. The My page collects Actors and History, and top-level scrollable pages reserve bottom content padding so their last content can scroll above the floating bar instead of being obscured.
 
 
 ### 2026-07-06
@@ -177,7 +177,11 @@ Agent 必须主动维护以下文档：
 
 ### 2026-07-06
 
-- Curated floating bottom navigation should use a compact Curated-themed rounded pill: a dark `surfaceContainerHigh` chrome in dark theme, equal-width vertical icon/label tabs, a subtle primary selected pill, and no low-opacity full-width strip over media content. Keep Home, My media, and Settings in the bottom bar; secondary destinations remain in the drawer.
+- Curated floating bottom navigation should use a compact Curated-themed rounded pill: a dark `surfaceContainerHigh` chrome in dark theme, equal-width vertical icon/label tabs, a subtle primary selected pill, and no low-opacity full-width strip over media content. Keep Home, My media, My, and Settings in the bottom bar; Actors and History live under the My page.
+
+- Android Settings root tab should use the same lightweight top-level page chrome as Home and My media: safe-drawing-aware header spacing, drawer/menu affordance when available, and no secondary TopAppBar/back arrow. Nested settings/about/server flows remain secondary destinations with back navigation.
+
+- Route visibility and selected-item checks must tolerate AndroidX Navigation type-safe route patterns with arguments, such as `SettingsRoute/{indexes}` or `SettingsRoute?indexes={indexes}`; do not compare only exact `qualifiedName` strings for routes that may carry arguments.
 
 - Refined Android floating bottom navigation to be shorter and calmer: the bar height is 58dp, item height is 46dp, dark theme chrome uses Curated `surfaceContainerHigh` instead of inverse/white glass, and selected state uses a lighter primary tint so the control sits more naturally over content.
 
@@ -187,5 +191,7 @@ Agent 必须主动维护以下文档：
 
 ### 2026-07-07
 
+- 调整 Android 主导航结构：底部浮动导航改为 `Home`、`My media`、`My`、`Settings`，新增 `MyRoute` / `CuratedMyScreen` 收纳 `Actors` 和 `History`；进入演员列表和播放历史时底部导航继续可见并选中 `My`。
+- 底部浮动导航的选中态只保留一个共享移动选中层；tab 自身不要再叠加 Material 默认 press state layer / ripple，避免切换时出现两个半透明薄片同时移动或停留。
 - 修复 Android 播放器横屏右侧音量手势失效：手势系统边缘排除区改用当前播放器视图宽高计算，并补充 `PlayerGestureExclusionPolicyTest` 覆盖横屏右半屏不应被排除、系统边缘仍排除。
 - 增强 Android 播放器横向拖动 seek：通过可测试的手势策略区分横向占优进度拖动与竖向亮度/音量拖动，横向拖动使用进度 HUD 预览目标时间并在松手时提交 seek。

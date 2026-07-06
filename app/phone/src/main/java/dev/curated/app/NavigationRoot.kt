@@ -5,8 +5,11 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +32,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -41,10 +45,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -53,6 +60,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
@@ -91,6 +101,7 @@ import dev.curated.app.presentation.curated.CuratedHistoryScreen
 import dev.curated.app.presentation.curated.CuratedHomeScreen
 import dev.curated.app.presentation.curated.CuratedMovieDetailScreen
 import dev.curated.app.presentation.curated.CuratedMoviesScreen
+import dev.curated.app.presentation.curated.CuratedMyScreen
 import dev.curated.app.presentation.settings.AboutScreen
 import dev.curated.app.presentation.settings.SettingsScreen
 import dev.curated.app.presentation.setup.addresses.ServerAddressesScreen
@@ -122,6 +133,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object HomeRoute
 
 @Serializable data object MediaRoute
+
+@Serializable data object MyRoute
 
 @Serializable data object ActorsRoute
 
@@ -170,6 +183,12 @@ val mediaTab =
         title = CoreR.string.title_media,
         icon = CoreR.drawable.ic_library,
         route = MediaRoute,
+    )
+val myTab =
+    TabBarItem(
+        title = CoreR.string.title_my,
+        icon = CoreR.drawable.ic_user,
+        route = MyRoute,
     )
 val actorsTab =
     TabBarItem(
@@ -247,13 +266,12 @@ fun NavigationRoot(
                     WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND
                 )
         )
-    val navigationItems = curatedNavigationItems(isOfflineMode)
     val bottomNavigationItems = curatedBottomNavigationItems()
     val drawerNavigationItems = curatedDrawerNavigationItems(isOfflineMode)
     val navigationDrawerEnabled =
         curatedNavigationDrawerEnabled(
             selectedRoute = selectedNavigationRoute,
-            navigationItems = navigationItems,
+            navigationItems = drawerNavigationItems,
         )
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -377,6 +395,14 @@ fun NavigationRoot(
                 CuratedMoviesScreen(
                     onOpenNavigation = onOpenNavigation,
                     onMovieClick = { movieId -> navController.safeNavigate(MovieRoute(movieId)) },
+                    bottomContentPadding = floatingNavigationContentBottomPadding,
+                )
+            }
+            composable<MyRoute> {
+                CuratedMyScreen(
+                    onOpenNavigation = onOpenNavigation,
+                    onActorsClick = { navController.safeNavigate(ActorsRoute) },
+                    onHistoryClick = { navController.safeNavigate(HistoryRoute) },
                     bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
             }
@@ -539,6 +565,7 @@ fun NavigationRoot(
                     navigateToServers = { navController.safeNavigate(ServersRoute) },
                     navigateToUsers = {},
                     navigateToAbout = { navController.safeNavigate(AboutRoute) },
+                    onOpenNavigation = onOpenNavigation,
                     navigateBack = { navController.safePopBackStack() },
                     bottomContentPadding = floatingNavigationContentBottomPadding,
                 )
@@ -547,6 +574,18 @@ fun NavigationRoot(
                 AboutScreen(navigateBack = { navController.safePopBackStack() })
             }
         }
+    }
+
+    if (!navigationDrawerEnabled) {
+        CuratedNavigationContentWithFloatingBar(
+            showFloatingBar = bottomNavigationVisible,
+            navigationItems = bottomNavigationItems,
+            selectedRoute = selectedNavigationRoute,
+            safeDrawingBottom = safeDrawingBottom,
+            onNavigationItemClick = onNavigationItemClick,
+            content = navigationContent,
+        )
+        return
     }
 
     when (navigationLayout) {
@@ -738,29 +777,45 @@ private fun CuratedFloatingBottomNavigationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(CuratedFloatingNavigationItemHeight),
-        shape = colors.shape,
-        color = Color.Transparent,
-        contentColor = if (selected) colors.selectedContentColor else colors.unselectedContentColor,
-        tonalElevation = 0.dp,
+    val interactionSource = remember { MutableInteractionSource() }
+    val contentColor = if (selected) colors.selectedContentColor else colors.unselectedContentColor
+    val indication =
+        if (curatedFloatingNavigationItemPressStateLayerEnabled()) {
+            LocalIndication.current
+        } else {
+            null
+        }
+
+    Box(
+        modifier =
+            modifier
+                .height(CuratedFloatingNavigationItemHeight)
+                .clip(colors.shape)
+                .semantics { this.selected = selected }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = indication,
+                    role = Role.Tab,
+                    onClick = onClick,
+                )
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                painter = painterResource(item.icon),
-                contentDescription = null,
-                modifier = Modifier.size(21.dp),
-            )
-            Text(
-                text = stringResource(item.title),
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-            )
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    painter = painterResource(item.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(21.dp),
+                )
+                Text(
+                    text = stringResource(item.title),
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -917,20 +972,29 @@ internal fun curatedStartDestination(
 internal fun curatedNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
     curatedBottomNavigationItems() + curatedDrawerNavigationItems(isOfflineMode)
 
-internal fun curatedBottomNavigationItems(): List<TabBarItem> = listOf(homeTab, mediaTab, settingsTab)
+internal fun curatedBottomNavigationItems(): List<TabBarItem> =
+    listOf(homeTab, mediaTab, myTab, settingsTab)
 
 internal fun curatedDrawerNavigationItems(isOfflineMode: Boolean): List<TabBarItem> =
-    listOf(actorsTab, historyTab)
+    emptyList()
 
 internal fun curatedFloatingNavigationBarVisible(currentRoute: String?): Boolean =
-    currentRoute in
-        setOf(
+    listOf(
             HomeRoute::class.qualifiedName,
             MediaRoute::class.qualifiedName,
+            MyRoute::class.qualifiedName,
             ActorsRoute::class.qualifiedName,
             HistoryRoute::class.qualifiedName,
             SettingsRoute::class.qualifiedName,
         )
+        .any { route -> curatedRouteMatches(currentRoute, route) }
+
+internal fun curatedRouteMatches(currentRoute: String?, routeQualifiedName: String?): Boolean =
+    currentRoute != null &&
+        routeQualifiedName != null &&
+        (currentRoute == routeQualifiedName ||
+            currentRoute.startsWith("$routeQualifiedName/") ||
+            currentRoute.startsWith("$routeQualifiedName?"))
 
 internal fun curatedFloatingNavigationContentBottomPadding(safeDrawingBottom: androidx.compose.ui.unit.Dp) =
     safeDrawingBottom +
@@ -970,6 +1034,8 @@ internal fun curatedFloatingNavigationSelectionAnimationDampingRatio() =
 internal fun curatedFloatingNavigationSelectionAnimationStiffness() =
     CuratedFloatingNavigationSelectionAnimationStiffness
 
+internal fun curatedFloatingNavigationItemPressStateLayerEnabled() = false
+
 internal fun curatedFloatingNavigationContainerBaseColor(surfaceContainerHigh: Color) =
     surfaceContainerHigh
 
@@ -1006,19 +1072,30 @@ internal fun curatedNavigationLayoutType(isExpandedWidth: Boolean): CuratedNavig
     }
 
 internal fun curatedNavigationSelectedRoute(currentRoute: String?): String? =
-    when (currentRoute) {
-        MovieRoute::class.qualifiedName,
-        LibraryRoute::class.qualifiedName,
-        CollectionRoute::class.qualifiedName,
-        FavoritesRoute::class.qualifiedName,
-        DownloadsRoute::class.qualifiedName,
-        ShowRoute::class.qualifiedName,
-        EpisodeRoute::class.qualifiedName,
-        SeasonRoute::class.qualifiedName,
-        PersonRoute::class.qualifiedName -> MediaRoute::class.qualifiedName
-        ActorRoute::class.qualifiedName -> ActorsRoute::class.qualifiedName
-        SettingsRoute::class.qualifiedName,
-        AboutRoute::class.qualifiedName -> SettingsRoute::class.qualifiedName
+    when {
+        listOf(
+                MovieRoute::class.qualifiedName,
+                LibraryRoute::class.qualifiedName,
+                CollectionRoute::class.qualifiedName,
+                FavoritesRoute::class.qualifiedName,
+                DownloadsRoute::class.qualifiedName,
+                ShowRoute::class.qualifiedName,
+                EpisodeRoute::class.qualifiedName,
+                SeasonRoute::class.qualifiedName,
+                PersonRoute::class.qualifiedName,
+            )
+            .any { route -> curatedRouteMatches(currentRoute, route) } ->
+            MediaRoute::class.qualifiedName
+        listOf(
+                ActorRoute::class.qualifiedName,
+                ActorsRoute::class.qualifiedName,
+                HistoryRoute::class.qualifiedName,
+            )
+            .any { route -> curatedRouteMatches(currentRoute, route) } ->
+            MyRoute::class.qualifiedName
+        listOf(SettingsRoute::class.qualifiedName, AboutRoute::class.qualifiedName)
+            .any { route -> curatedRouteMatches(currentRoute, route) } ->
+            SettingsRoute::class.qualifiedName
         else -> currentRoute
     }
 

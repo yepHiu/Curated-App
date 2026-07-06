@@ -5,6 +5,9 @@
     <string name="remove">删除</string>
     <string name="cancel">取消</string>
     <string name="title_media">影片库</string>
+    <string name="title_my">我的</string>
+    <string name="title_actors">演员</string>
+    <string name="title_history">播放历史</string>
     <string name="title_favorite">收藏</string>
     <string name="view_all">查看所有</string>
     <string name="error_loading_data">加载数据错误</string>

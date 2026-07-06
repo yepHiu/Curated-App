@@ -6,6 +6,7 @@
     <string name="cancel">Cancel</string>
     <string name="title_home">Home</string>
     <string name="title_media">My media</string>
+    <string name="title_my">My</string>
     <string name="title_actors">Actors</string>
     <string name="title_favorite">Favorites</string>
     <string name="title_settings">Settings</string>

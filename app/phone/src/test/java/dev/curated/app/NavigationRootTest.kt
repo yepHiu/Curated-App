@@ -48,8 +48,7 @@ class NavigationRootTest {
             listOf(
                 HomeRoute::class,
                 MediaRoute::class,
-                ActorsRoute::class,
-                HistoryRoute::class,
+                MyRoute::class,
                 SettingsRoute::class,
             ),
             onlineRoutes,
@@ -58,8 +57,7 @@ class NavigationRootTest {
             listOf(
                 HomeRoute::class,
                 MediaRoute::class,
-                ActorsRoute::class,
-                HistoryRoute::class,
+                MyRoute::class,
                 SettingsRoute::class,
             ),
             offlineRoutes,
@@ -73,35 +71,62 @@ class NavigationRootTest {
         val routes = curatedBottomNavigationItems().map { it.route::class }
 
         assertEquals(
-            listOf(HomeRoute::class, MediaRoute::class, SettingsRoute::class),
+            listOf(HomeRoute::class, MediaRoute::class, MyRoute::class, SettingsRoute::class),
             routes,
         )
     }
 
     @Test
-    fun curatedDrawerNavigationItemsOnlyExposeSecondaryDestinations() {
+    fun curatedDrawerNavigationItemsAreEmptyWhenSecondaryDestinationsMoveUnderMy() {
         val routes = curatedDrawerNavigationItems(isOfflineMode = false).map { it.route::class }
 
-        assertEquals(
-            listOf(
-                ActorsRoute::class,
-                HistoryRoute::class,
-            ),
-            routes,
-        )
+        assertTrue(routes.isEmpty())
     }
 
     @Test
     fun curatedFloatingNavigationBarOnlyShowsOnTopLevelAppRoutes() {
         assertTrue(curatedFloatingNavigationBarVisible(HomeRoute::class.qualifiedName))
         assertTrue(curatedFloatingNavigationBarVisible(MediaRoute::class.qualifiedName))
+        assertTrue(curatedFloatingNavigationBarVisible(MyRoute::class.qualifiedName))
         assertTrue(curatedFloatingNavigationBarVisible(ActorsRoute::class.qualifiedName))
         assertTrue(curatedFloatingNavigationBarVisible(HistoryRoute::class.qualifiedName))
         assertTrue(curatedFloatingNavigationBarVisible(SettingsRoute::class.qualifiedName))
+        assertTrue(
+            curatedFloatingNavigationBarVisible(
+                "${SettingsRoute::class.qualifiedName}/{indexes}"
+            )
+        )
+        assertTrue(
+            curatedFloatingNavigationBarVisible(
+                "${SettingsRoute::class.qualifiedName}?indexes={indexes}"
+            )
+        )
 
         assertFalse(curatedFloatingNavigationBarVisible(MovieRoute::class.qualifiedName))
         assertFalse(curatedFloatingNavigationBarVisible(WelcomeRoute::class.qualifiedName))
         assertFalse(curatedFloatingNavigationBarVisible(AboutRoute::class.qualifiedName))
+    }
+
+    @Test
+    fun curatedRouteMatchingAcceptsTypedNavigationArgumentPatterns() {
+        assertTrue(
+            curatedRouteMatches(
+                currentRoute = "${SettingsRoute::class.qualifiedName}/{indexes}",
+                routeQualifiedName = SettingsRoute::class.qualifiedName,
+            )
+        )
+        assertTrue(
+            curatedRouteMatches(
+                currentRoute = "${SettingsRoute::class.qualifiedName}?indexes={indexes}",
+                routeQualifiedName = SettingsRoute::class.qualifiedName,
+            )
+        )
+        assertFalse(
+            curatedRouteMatches(
+                currentRoute = "${SettingsRoute::class.qualifiedName}Extra",
+                routeQualifiedName = SettingsRoute::class.qualifiedName,
+            )
+        )
     }
 
     @Test
@@ -170,6 +195,11 @@ class NavigationRootTest {
     }
 
     @Test
+    fun curatedFloatingNavigationUsesSingleSelectionStateLayer() {
+        assertFalse(curatedFloatingNavigationItemPressStateLayerEnabled())
+    }
+
+    @Test
     fun curatedNavigationLayoutUsesModalDrawerOnCompactWidth() {
         assertEquals(
             CuratedNavigationLayout.ModalDrawer,
@@ -192,26 +222,42 @@ class NavigationRootTest {
             curatedNavigationSelectedRoute(MovieRoute("movie-1")::class.qualifiedName),
         )
         assertEquals(
-            ActorsRoute::class.qualifiedName,
+            MediaRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute("${MovieRoute::class.qualifiedName}/{movieId}"),
+        )
+        assertEquals(
+            MyRoute::class.qualifiedName,
             curatedNavigationSelectedRoute(ActorRoute("Actor A")::class.qualifiedName),
+        )
+        assertEquals(
+            MyRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute(ActorsRoute::class.qualifiedName),
+        )
+        assertEquals(
+            MyRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute(HistoryRoute::class.qualifiedName),
         )
         assertEquals(
             SettingsRoute::class.qualifiedName,
             curatedNavigationSelectedRoute(AboutRoute::class.qualifiedName),
         )
+        assertEquals(
+            SettingsRoute::class.qualifiedName,
+            curatedNavigationSelectedRoute("${SettingsRoute::class.qualifiedName}/{indexes}"),
+        )
     }
 
     @Test
-    fun curatedNavigationDrawerOnlyEnablesForAppRoutes() {
-        val navigationItems = curatedNavigationItems(isOfflineMode = false)
+    fun curatedNavigationDrawerDisablesWhenSecondaryDestinationsMoveUnderMy() {
+        val navigationItems = curatedDrawerNavigationItems(isOfflineMode = false)
 
-        assertTrue(
+        assertFalse(
             curatedNavigationDrawerEnabled(
                 selectedRoute = HomeRoute::class.qualifiedName,
                 navigationItems = navigationItems,
             )
         )
-        assertTrue(
+        assertFalse(
             curatedNavigationDrawerEnabled(
                 selectedRoute = MediaRoute::class.qualifiedName,
                 navigationItems = navigationItems,
